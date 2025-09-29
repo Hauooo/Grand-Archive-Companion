@@ -17,14 +17,14 @@ public class CounterFragment extends Fragment {
     private Button changeBackgroundButton1, changeBackgroundButton2;
 
     private String[] champions = {
-            "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diao Chan", "Guo Jia",
+            "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
             "Jin", "Kong Ming", "Lorraine", "Mordred", "Rai", "Zander", "Nico",
             "Polkhawk", "Vanitas", "Merlin", "Silvie", "Tonoris", "Tristan"
     };
 
     private int[] championImages = {
             R.drawable.alice, R.drawable.allen, R.drawable.arisanna, R.drawable.ciel,
-            R.drawable.diana, R.drawable.diaochan, R.drawable.guojia, R.drawable.jin,
+            R.drawable.diana, R.drawable.diana1, R.drawable.diaochan, R.drawable.guojia, R.drawable.jin,
             R.drawable.kongming, R.drawable.lorraine, R.drawable.mordred, R.drawable.rai,
             R.drawable.zander, R.drawable.nico, R.drawable.polkhawk, R.drawable.vanitas,
             R.drawable.merlin, R.drawable.silvie, R.drawable.tonoris, R.drawable.tristan
@@ -36,6 +36,13 @@ public class CounterFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
+        View decorView = requireActivity().getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        );
+
 
         TextView counterValueA = view.findViewById(R.id.counter_value_a);
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
@@ -50,33 +57,46 @@ public class CounterFragment extends Fragment {
         counterValueA.setText(String.valueOf(counterA));
         counterValueB.setText(String.valueOf(counterB));
 
-        counterValueA.setOnTouchListener((v, event) -> {
+        player1background.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
                 if (x < v.getWidth() / 2) {
-                    if(counterA > 0) counterA--;
+                    if (counterA > 0) {
+                        counterA--;
+                        counterValueA.setText(String.valueOf(counterA));
+                        // Show floating red damage
+                        showHealIndicator((ViewGroup) v.getParent(), 1);
+                    }
                 } else {
                     counterA++;
+                    counterValueA.setText(String.valueOf(counterA));
+                    // (Optional) green heal animation
+                    showDamageIndicator((ViewGroup) v.getParent(), 1);
                 }
-                counterValueA.setText(String.valueOf(counterA));
-                return true; // consume only when touching counter
-            }
-            return false; // let others (like button) handle their clicks
-        });
-
-        counterValueB.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float x = event.getX();
-                if (x < v.getWidth() / 2) {
-                    if(counterB > 0) counterB--;
-                } else {
-                    counterB++;
-                }
-                counterValueB.setText(String.valueOf(counterB));
                 return true;
             }
             return false;
         });
+
+        player2background.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                float x = event.getX();
+                if (x < v.getWidth() / 2) {
+                    if (counterB > 0) {
+                        counterB--;
+                        counterValueB.setText(String.valueOf(counterB));
+                        showHealIndicator((ViewGroup) v.getParent(), 1);
+                    }
+                } else {
+                    counterB++;
+                    counterValueB.setText(String.valueOf(counterB));
+                    showDamageIndicator((ViewGroup) v.getParent(), 1);
+                }
+                return true;
+            }
+            return false;
+        });
+
 
 
         // Let players choose champion by tapping their background
@@ -116,6 +136,45 @@ public class CounterFragment extends Fragment {
                 .show();
     }
 
+    private void showDamageIndicator(ViewGroup container, int damage) {
+        TextView damageText = new TextView(requireContext());
+        damageText.setText("+" + damage);
+        damageText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        damageText.setTextSize(32);
+        damageText.setAlpha(1f);
+
+        damageText.setX(container.getX() - 100);
+        damageText.setY(container.getY() + 200);
+        container.addView(damageText);
+
+        damageText.animate()
+                .translationYBy(-100)
+                .alpha(0f)
+                .setDuration(1000)
+                .withEndAction(() -> container.removeView(damageText))
+                .start();
+    }
+
+    private void showHealIndicator(ViewGroup container, int heal) {
+        TextView healText = new TextView(requireContext());
+        healText.setText("+" + heal);
+        healText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+        healText.setTextSize(32);
+        healText.setAlpha(1f);
+
+        healText.setX(container.getX() - 100);
+        healText.setY(container.getY() + 200);
+        container.addView(healText);
+
+        healText.animate()
+                .translationYBy(-100)
+                .alpha(0f)
+                .setDuration(1000)
+                .withEndAction(() -> container.removeView(healText))
+                .start();
+    }
+
+
     public void onResume() {
         super.onResume();
 
@@ -125,6 +184,8 @@ public class CounterFragment extends Fragment {
                 navBar.setVisibility(View.GONE);
             }
         }
+
+        requireActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     public void onPause() {
