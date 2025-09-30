@@ -258,6 +258,12 @@ public class CounterFragment extends Fragment {
             if (navBar != null) {
                 navBar.setVisibility(View.GONE);
             }
+            View decorView = requireActivity().getWindow().getDecorView();
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
         }
     }
 
