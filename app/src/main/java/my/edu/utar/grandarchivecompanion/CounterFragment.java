@@ -1,12 +1,15 @@
 package my.edu.utar.grandarchivecompanion;
 
 import android.app.AlertDialog;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.fragment.app.Fragment;
@@ -15,6 +18,11 @@ public class CounterFragment extends Fragment {
 
     private ImageView player1background, player2background;
     private Button changeBackgroundButton1, changeBackgroundButton2;
+    private int pendingChangeA = 0;
+    private int pendingChangeB = 0;
+
+    private TextView activeChangeTextA = null;
+    private TextView activeChangeTextB = null;
 
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
@@ -60,37 +68,44 @@ public class CounterFragment extends Fragment {
         player1background.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
+                float y = event.getY();
+
+                FrameLayout playerALayer = view.findViewById(R.id.damage_indicator_layer_a);
+
                 if (x < v.getWidth() / 2) {
                     if (counterA > 0) {
                         counterA--;
                         counterValueA.setText(String.valueOf(counterA));
-                        // Show floating red damage
-                        showHealIndicator((ViewGroup) v.getParent(), 1);
+                        showChange(playerALayer, -1, true);
                     }
                 } else {
                     counterA++;
                     counterValueA.setText(String.valueOf(counterA));
-                    // (Optional) green heal animation
-                    showDamageIndicator((ViewGroup) v.getParent(), 1);
+                    showChange(playerALayer, +1, true);
                 }
                 return true;
             }
             return false;
         });
 
+
         player2background.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
+                float y = event.getY();
+
+                FrameLayout playerBLayer = view.findViewById(R.id.damage_indicator_layer_b);
+
                 if (x < v.getWidth() / 2) {
                     if (counterB > 0) {
                         counterB--;
                         counterValueB.setText(String.valueOf(counterB));
-                        showHealIndicator((ViewGroup) v.getParent(), 1);
+                        showChange(playerBLayer, -1, false);
                     }
                 } else {
                     counterB++;
                     counterValueB.setText(String.valueOf(counterB));
-                    showDamageIndicator((ViewGroup) v.getParent(), 1);
+                    showChange(playerBLayer, +1, false);
                 }
                 return true;
             }
@@ -136,43 +151,98 @@ public class CounterFragment extends Fragment {
                 .show();
     }
 
-    private void showDamageIndicator(ViewGroup container, int damage) {
-        TextView damageText = new TextView(requireContext());
-        damageText.setText("+" + damage);
-        damageText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-        damageText.setTextSize(32);
-        damageText.setAlpha(1f);
+    private void showChange(FrameLayout playerLayer, int amount, boolean isPlayerA){
+        TextView changeText;
+        int newValue;
 
-        damageText.setX(container.getX() - 100);
-        damageText.setY(container.getY() + 200);
-        container.addView(damageText);
+        if (isPlayerA){
+            pendingChangeA += amount;
 
-        damageText.animate()
-                .translationYBy(-100)
+            if(activeChangeTextA == null){
+                changeText = new TextView(playerLayer.getContext());
+                activeChangeTextA = changeText;
+                playerLayer.addView(changeText);
+
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        android.view.Gravity.TOP | Gravity.CENTER_HORIZONTAL
+
+                );
+                params.topMargin = 200; // Adjust top margin as needed
+                changeText.setLayoutParams(params);
+
+                changeText.setTextSize(32f);
+                changeText.setShadowLayer(8f, 4f, 4f, Color.BLACK);
+
+                //Start animation
+            }
+            else{
+                changeText = activeChangeTextA;
+                changeText.animate().cancel();
+                changeText.setAlpha(1f);
+                changeText.setTranslationY(0f);
+            }
+
+            newValue = pendingChangeA;
+        } else{
+            pendingChangeB += amount;
+
+            if(activeChangeTextB == null){
+                changeText = new TextView(playerLayer.getContext());
+                activeChangeTextB = changeText;
+                playerLayer.addView(changeText);
+
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        android.view.Gravity.TOP | Gravity.CENTER_HORIZONTAL
+                );
+
+                params.topMargin = 200; // Adjust top margin as needed
+                changeText.setLayoutParams(params);
+
+                changeText.setTextSize(32f);
+                changeText.setShadowLayer(8f, 4f, 4f, Color.BLACK);
+
+
+            }
+            else{
+                changeText = activeChangeTextB;
+                changeText.animate().cancel();
+                changeText.setAlpha(1f);
+                changeText.setTranslationY(0f);
+            }
+
+            newValue = pendingChangeB;
+        }
+
+        if (newValue > 0){
+            changeText.setText("+" + newValue);
+            changeText.setTextColor(Color.WHITE);
+        }
+        else{
+            changeText.setText(String.valueOf(newValue));
+            changeText.setTextColor(Color.WHITE);
+        }
+
+        changeText.animate()
                 .alpha(0f)
+                .translationY(-200f)
                 .setDuration(1000)
-                .withEndAction(() -> container.removeView(damageText))
+                .withEndAction(() -> {
+                    playerLayer.removeView(changeText);
+                    if (isPlayerA){
+                        activeChangeTextA = null;
+                        pendingChangeA = 0;
+                    } else{
+                        activeChangeTextB = null;
+                        pendingChangeB = 0;
+                    }
+                })
                 .start();
     }
 
-    private void showHealIndicator(ViewGroup container, int heal) {
-        TextView healText = new TextView(requireContext());
-        healText.setText("+" + heal);
-        healText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
-        healText.setTextSize(32);
-        healText.setAlpha(1f);
-
-        healText.setX(container.getX() - 100);
-        healText.setY(container.getY() + 200);
-        container.addView(healText);
-
-        healText.animate()
-                .translationYBy(-100)
-                .alpha(0f)
-                .setDuration(1000)
-                .withEndAction(() -> container.removeView(healText))
-                .start();
-    }
 
 
     public void onResume() {

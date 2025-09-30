@@ -44,6 +44,15 @@
             android:shadowDy="8"
             android:shadowRadius="16" />
 
+        <FrameLayout
+            android:id="@+id/damage_indicator_layer_b"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:clickable="false"
+            android:focusable="false"
+            />
+
         <!-- Change Champion Button -->
         <Button
             android:id="@+id/changeBackgroundButton2"
@@ -92,6 +101,15 @@
             android:shadowDx="4"
             android:shadowDy="8"
             android:shadowRadius="16" />
+
+        <FrameLayout
+            android:id="@+id/damage_indicator_layer_a"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:clickable="false"
+            android:focusable="false"
+            />
 
         <!-- Change Champion Button -->
         <Button
