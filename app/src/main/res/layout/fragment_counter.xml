@@ -6,6 +6,7 @@
 
     <!-- Player B (Top Half) -->
     <FrameLayout
+        android:id="@+id/player_b_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:rotation="180"
@@ -19,6 +20,10 @@
             android:scaleType="centerCrop"
             android:src="@drawable/static_background" />
 
+
+
+
+
         <!-- Background -->
         <ImageView
             android:id="@+id/player_b_background"
@@ -31,17 +36,26 @@
         <!-- Life Counter -->
         <TextView
             android:id="@+id/counter_value_b"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
             android:text="0"
             android:textSize="96sp"
             android:textColor="@android:color/white"
-            android:shadowColor="#80000000"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4" />
+            android:shadowColor="#FF000000"
+            android:shadowDx="4"
+            android:shadowDy="8"
+            android:shadowRadius="16" />
+
+        <FrameLayout
+            android:id="@+id/damage_indicator_layer_b"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:clickable="false"
+            android:focusable="false"
+            />
 
         <!-- Change Champion Button -->
         <Button
@@ -51,10 +65,14 @@
             android:text="Change"
             android:layout_gravity="bottom|end"
             android:layout_margin="8dp" />
+
+
     </FrameLayout>
+
 
     <!-- Player A (Bottom Half) -->
     <FrameLayout
+        android:id="@+id/player_a_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
@@ -79,19 +97,27 @@
 
         <TextView
             android:id="@+id/counter_value_a"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:shadowColor="#80000000"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
             android:text="0"
             android:textColor="@android:color/white"
-            android:textSize="96sp" />
+            android:textSize="96sp"
+            android:shadowColor="#FF000000"
+            android:shadowDx="4"
+            android:shadowDy="8"
+            android:shadowRadius="16" />
 
         <!-- Change Champion Button -->
+        <FrameLayout
+            android:id="@+id/damage_indicator_layer_a"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:clickable="false"
+            android:focusable="false" />
+
         <Button
             android:id="@+id/changeBackgroundButton1"
             android:layout_width="wrap_content"
@@ -99,6 +125,10 @@
             android:text="Change"
             android:layout_gravity="bottom|end"
             android:layout_margin="8dp" />
+
+
     </FrameLayout>
+
+
 
 </LinearLayout>
