@@ -255,6 +255,7 @@ public class CounterFragment extends Fragment {
 
         if (getActivity() != null){
             View navBar = getActivity().findViewById(R.id.bottom_navigation);
+            requireActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             if (navBar != null) {
                 navBar.setVisibility(View.GONE);
             }
