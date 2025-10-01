@@ -17,6 +17,7 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import my.edu.utar.grandarchivecompanion.ChampionAnimationHelper;
 
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -27,6 +28,8 @@ public class CounterFragment extends Fragment {
 
     private ImageView player1background, player2background;
     private Button changeBackgroundButton1, changeBackgroundButton2;
+
+
 
     private TextView activeChangeTextA = null;
     private TextView activeChangeTextB = null;
@@ -96,11 +99,13 @@ public class CounterFragment extends Fragment {
                         counterA--;
                         counterValueA.setText(String.valueOf(counterA));
                         showChange(playerALayer, -1, true);
+                        ChampionAnimationHelper.playHeal(player1background);
                     }
                 } else {
                     counterA++;
                     counterValueA.setText(String.valueOf(counterA));
                     showChange(playerALayer, +1, true);
+                    ChampionAnimationHelper.playDamage(player1background);
                 }
                 return true;
             }
@@ -120,11 +125,13 @@ public class CounterFragment extends Fragment {
                         counterB--;
                         counterValueB.setText(String.valueOf(counterB));
                         showChange(playerBLayer, -1, false);
+                        ChampionAnimationHelper.playHeal(player2background);
                     }
                 } else {
                     counterB++;
                     counterValueB.setText(String.valueOf(counterB));
                     showChange(playerBLayer, +1, false);
+                    ChampionAnimationHelper.playDamage(player2background);
                 }
                 return true;
             }
@@ -222,6 +229,7 @@ public class CounterFragment extends Fragment {
         if (newValue > 0) {
             changeText.setText("+" + newValue);
             changeText.setTextColor(Color.WHITE);
+
         } else {
             changeText.setText(String.valueOf(newValue));
             changeText.setTextColor(Color.WHITE);
