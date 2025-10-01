@@ -1,9 +1,8 @@
 package my.edu.utar.grandarchivecompanion;
 
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -13,9 +12,14 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-import androidx.fragment.app.Fragment;
 
-import org.w3c.dom.Text;
+
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.ArrayList;
 
@@ -36,18 +40,19 @@ public class CounterFragment extends Fragment {
     private int pendingChangeB = 0;
 
     private String[] champions = {
-            "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diao Chan", "Guo Jia",
-            "Jin", "Kong Ming", "Lorraine", "Mordred", "Rai", "Zander", "Nico",
-            "Polkhawk", "Vanitas", "Merlin", "Silvie", "Tonoris", "Tristan"
+            "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
+            "Jin", "Kong Ming", "Lorraine", "Lu Bu", "Mordred", "Rai", "Zander", "Nico",
+            "Polkhawk", "Vanitas", "Merlin", "Silvie", "Tonoris", "Tristan, Shadow Dancer"
     };
 
     private int[] championImages = {
             R.drawable.alice, R.drawable.allen, R.drawable.arisanna, R.drawable.ciel,
-            R.drawable.diana, R.drawable.diaochan, R.drawable.guojia, R.drawable.jin,
-            R.drawable.kongming, R.drawable.lorraine, R.drawable.mordred, R.drawable.rai,
+            R.drawable.diana, R.drawable.diana_astra, R.drawable.diaochan, R.drawable.guojia, R.drawable.jin,
+            R.drawable.kongming, R.drawable.lorraine,R.drawable.lubu, R.drawable.mordred, R.drawable.rai,
             R.drawable.zander, R.drawable.nico, R.drawable.polkhawk, R.drawable.vanitas,
-            R.drawable.merlin, R.drawable.silvie, R.drawable.tonoris, R.drawable.tristan
+            R.drawable.merlin, R.drawable.silvie, R.drawable.tonoris, R.drawable.shadowdancer
     };
+
 
     private int counterA = 0;
     private int counterB = 0;
@@ -63,6 +68,8 @@ public class CounterFragment extends Fragment {
         );
 
 
+
+
         TextView counterValueA = view.findViewById(R.id.counter_value_a);
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
         player1background = view.findViewById(R.id.player_a_background);
@@ -70,6 +77,7 @@ public class CounterFragment extends Fragment {
         changeBackgroundButton1 = view.findViewById(R.id.changeBackgroundButton1);
         changeBackgroundButton2 = view.findViewById(R.id.changeBackgroundButton2);
 
+        // Initialize gesture detector
 
 
         // Initial values
@@ -122,6 +130,7 @@ public class CounterFragment extends Fragment {
             }
             return false;
         });
+
 
 
 
@@ -238,16 +247,25 @@ public class CounterFragment extends Fragment {
 
 
     private void showChampionPicker(int player) {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Choose Champion")
-                .setItems(champions, (dialog, which) -> {
-                    if (player == 1) {
-                        player1background.setImageResource(championImages[which]);
-                    } else {
-                        player2background.setImageResource(championImages[which]);
-                    }
-                })
-                .show();
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_champion_picker, null);
+        dialog.setContentView(dialogView);
+
+        RecyclerView recyclerView = dialogView.findViewById(R.id.champion_list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        if (player == 2){
+            dialogView.setRotation(180);
+        }
+        recyclerView.setAdapter(new ChampionAdapter(champions, championImages, position -> {
+            if (player == 1) {
+                player1background.setImageResource(championImages[position]);
+            } else {
+                player2background.setImageResource(championImages[position]);
+            }
+            dialog.dismiss();
+        }));
+        dialog.show();
     }
 
     public void onResume() {
@@ -278,6 +296,9 @@ public class CounterFragment extends Fragment {
             }
         }
     }
+
+
+
 
     public void onDestroyView() {
         super.onDestroyView();

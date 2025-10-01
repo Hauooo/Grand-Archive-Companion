@@ -29,9 +29,10 @@
             android:id="@+id/player_b_background"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_gravity="top"
             android:alpha="0.5"
             android:scaleType="centerCrop"
-            android:src="@drawable/placeholder" />
+            android:src="@drawable/lorraine" />
 
         <!-- Life Counter -->
         <TextView
@@ -91,7 +92,7 @@
             android:layout_height="match_parent"
             android:alpha="0.5"
             android:scaleType="centerCrop"
-            android:src="@drawable/placeholder" />
+            android:src="@drawable/lorraine" />
 
         <!-- Life Counter -->
 
