@@ -125,7 +125,6 @@ public class CounterFragment extends Fragment {
                         showChange(playerALayer, -1, true);
                         ChampionAnimationHelper.playHeal(player1background);
                         vibrate();
-                        vibrate();
                         playHealSound();
                     }
                 } else {
@@ -343,26 +342,7 @@ public class CounterFragment extends Fragment {
 
 
 
-    private void vibrate(){
-        Vibrator vibrator = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            VibratorManager vibratorManager = requireContext().getSystemService(VibratorManager.class);
-            if (vibratorManager != null) {
-                vibrator = vibratorManager.getDefaultVibrator();
-            }
-        } else {
-            vibrator = (Vibrator) requireContext().getSystemService(requireContext().VIBRATOR_SERVICE);
-        }
 
-        if (vibrator != null && vibrator.hasVibrator()) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
-            } else {
-                //deprecated in API 26
-                vibrator.vibrate(50);
-            }
-        }
-    }
 
     public void onResume() {
         super.onResume();
