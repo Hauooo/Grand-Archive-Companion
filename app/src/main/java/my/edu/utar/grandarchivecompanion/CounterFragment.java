@@ -1,6 +1,9 @@
 package my.edu.utar.grandarchivecompanion;
 
 import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.view.Gravity;
@@ -12,6 +15,9 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 
 
 import androidx.fragment.app.Fragment;
@@ -42,6 +48,11 @@ public class CounterFragment extends Fragment {
     private int pendingChangeA = 0;
     private int pendingChangeB = 0;
 
+    //sound effects
+    // MediaPlayer damageSound, healSound;
+    private SoundPool soundPool;
+    private int damageSoundId, healSoundId;
+
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
             "Jin", "Kong Ming", "Lorraine", "Lu Bu", "Mordred", "Rai", "Zander", "Nico",
@@ -70,8 +81,19 @@ public class CounterFragment extends Fragment {
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         );
 
+        super.onCreate(savedInstanceState);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            soundPool = new SoundPool.Builder().setMaxStreams(2).build();
+        } else {
+            soundPool = new SoundPool(2, android.media.AudioManager.STREAM_MUSIC, 0);
+        }
 
-
+        damageSoundId = soundPool.load(getContext(), R.raw.damage_sound, 1);
+        healSoundId = soundPool.load(getContext(), R.raw.heal_sound, 1);
 
         TextView counterValueA = view.findViewById(R.id.counter_value_a);
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
@@ -100,12 +122,16 @@ public class CounterFragment extends Fragment {
                         counterValueA.setText(String.valueOf(counterA));
                         showChange(playerALayer, -1, true);
                         ChampionAnimationHelper.playHeal(player1background);
+                        vibrate();
+                        playHealSound();
                     }
                 } else {
                     counterA++;
                     counterValueA.setText(String.valueOf(counterA));
                     showChange(playerALayer, +1, true);
                     ChampionAnimationHelper.playDamage(player1background);
+                    vibrate();
+                    playDamageSound();
                 }
                 return true;
             }
@@ -126,12 +152,16 @@ public class CounterFragment extends Fragment {
                         counterValueB.setText(String.valueOf(counterB));
                         showChange(playerBLayer, -1, false);
                         ChampionAnimationHelper.playHeal(player2background);
+                        vibrate();
+                        playHealSound();
                     }
                 } else {
                     counterB++;
                     counterValueB.setText(String.valueOf(counterB));
                     showChange(playerBLayer, +1, false);
                     ChampionAnimationHelper.playDamage(player2background);
+                    vibrate();
+                    playDamageSound();
                 }
                 return true;
             }
@@ -150,6 +180,7 @@ public class CounterFragment extends Fragment {
             counterB = 0;
             counterValueA.setText(String.valueOf(counterA));
             counterValueB.setText(String.valueOf(counterB));
+            vibrate();
             return true;
         });
 
@@ -158,6 +189,7 @@ public class CounterFragment extends Fragment {
             counterB = 0;
             counterValueA.setText(String.valueOf(counterA));
             counterValueB.setText(String.valueOf(counterB));
+            vibrate();
             return true;
         });
 
@@ -253,6 +285,35 @@ public class CounterFragment extends Fragment {
                 .start();
     }
 
+    private void vibrate(){
+        Vibrator vibrator = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = requireContext().getSystemService(VibratorManager.class);
+            if (vibratorManager != null) {
+                vibrator = vibratorManager.getDefaultVibrator();
+            }
+        } else {
+            vibrator = (Vibrator) requireContext().getSystemService(requireContext().VIBRATOR_SERVICE);
+        }
+
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(1000, 255));
+            } else {
+                //deprecated in API 26
+                vibrator.vibrate(50);
+            }
+        }
+    }
+
+    private void playDamageSound(){
+        soundPool.play(damageSoundId, 1, 1, 0, 0, 1);
+    }
+
+    private void playHealSound(){
+        soundPool.play(healSoundId, 1, 1, 0, 0, 1);
+    }
+
 
     private void showChampionPicker(int player) {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
@@ -275,6 +336,8 @@ public class CounterFragment extends Fragment {
         }));
         dialog.show();
     }
+
+
 
     public void onResume() {
         super.onResume();
