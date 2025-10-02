@@ -1,18 +1,26 @@
 package my.edu.utar.grandarchivecompanion;
 
 import android.os.Bundle;
+import android.view.View;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
+
+    private boolean isFullScreen = false;
+    private BottomNavigationView bottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav = findViewById(R.id.bottom_navigation);
 
         // Load default fragment (Cards)
         if (savedInstanceState == null) {
@@ -40,5 +48,38 @@ public class MainActivity extends AppCompatActivity {
 
             return true;
         });
+
+        //Handle back button to exit full screen mode
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (isFullScreen) {
+                    exitFullScreenMode();
+                } else {
+                    setEnabled(false);
+                    onBackPressed();
+                }
+            }
+        });
+    }
+
+    public void enterFullScreenMode() {
+        isFullScreen = true;
+        if (bottomNav != null) {
+            bottomNav.setVisibility(View.GONE);
+        }
+        WindowInsetsControllerCompat insetsController =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        insetsController.hide(WindowInsetsCompat.Type.systemBars());
+    }
+
+    public void exitFullScreenMode() {
+        isFullScreen = false;
+        if (bottomNav != null) {
+            bottomNav.setVisibility(View.VISIBLE);
+        }
+        WindowInsetsControllerCompat insetsController =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        insetsController.show(WindowInsetsCompat.Type.systemBars());
     }
 }

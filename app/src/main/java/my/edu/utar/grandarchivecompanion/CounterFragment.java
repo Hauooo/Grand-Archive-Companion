@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -20,10 +21,14 @@ import android.os.Vibrator;
 import android.os.VibratorManager;
 
 
+
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import my.edu.utar.grandarchivecompanion.ChampionAnimationHelper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -74,12 +79,9 @@ public class CounterFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
-        View decorView = requireActivity().getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        );
+
+
+        ((MainActivity) getActivity()).enterFullScreenMode();
 
         super.onCreate(savedInstanceState);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
@@ -122,6 +124,7 @@ public class CounterFragment extends Fragment {
                         counterValueA.setText(String.valueOf(counterA));
                         showChange(playerALayer, -1, true);
                         ChampionAnimationHelper.playHeal(player1background);
+                        vibrate();
                         vibrate();
                         playHealSound();
                     }
@@ -180,7 +183,6 @@ public class CounterFragment extends Fragment {
             counterB = 0;
             counterValueA.setText(String.valueOf(counterA));
             counterValueB.setText(String.valueOf(counterB));
-            vibrate();
             return true;
         });
 
@@ -189,7 +191,6 @@ public class CounterFragment extends Fragment {
             counterB = 0;
             counterValueA.setText(String.valueOf(counterA));
             counterValueB.setText(String.valueOf(counterB));
-            vibrate();
             return true;
         });
 
@@ -339,6 +340,30 @@ public class CounterFragment extends Fragment {
 
 
 
+
+
+
+    private void vibrate(){
+        Vibrator vibrator = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = requireContext().getSystemService(VibratorManager.class);
+            if (vibratorManager != null) {
+                vibrator = vibratorManager.getDefaultVibrator();
+            }
+        } else {
+            vibrator = (Vibrator) requireContext().getSystemService(requireContext().VIBRATOR_SERVICE);
+        }
+
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                //deprecated in API 26
+                vibrator.vibrate(50);
+            }
+        }
+    }
+
     public void onResume() {
         super.onResume();
 
@@ -373,7 +398,8 @@ public class CounterFragment extends Fragment {
 
     public void onDestroyView() {
         super.onDestroyView();
-        requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+        ((MainActivity) getActivity()).exitFullScreenMode();
+
     }
 }
 
