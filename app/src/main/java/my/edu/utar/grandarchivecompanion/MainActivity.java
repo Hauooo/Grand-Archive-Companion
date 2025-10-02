@@ -55,9 +55,12 @@ public class MainActivity extends AppCompatActivity {
             public void handleOnBackPressed() {
                 if (isFullScreen) {
                     exitFullScreenMode();
-                } else {
-                    setEnabled(false);
-                    onBackPressed();
+                }
+                else if(getSupportFragmentManager().getBackStackEntryCount() > 0){
+                    getSupportFragmentManager().popBackStack();
+                }
+                else {
+                    finish();
                 }
             }
         });
