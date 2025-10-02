@@ -8,10 +8,12 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 
 
 import androidx.fragment.app.Fragment;
@@ -66,12 +68,9 @@ public class CounterFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
-        View decorView = requireActivity().getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        );
+
+
+        ((MainActivity) getActivity()).enterFullScreenMode();
 
 
 
@@ -175,6 +174,9 @@ public class CounterFragment extends Fragment {
 
         return view;
     }
+
+
+
     private void showChange(FrameLayout playerLayer, int amount, boolean isPlayerA) {
         TextView changeText;
         int newValue;
@@ -285,6 +287,11 @@ public class CounterFragment extends Fragment {
         dialog.show();
     }
 
+
+
+
+
+
     private void vibrate(){
         Vibrator vibrator = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -324,23 +331,14 @@ public class CounterFragment extends Fragment {
         }
     }
 
-    public void onPause() {
-        super.onPause();
-
-        if (getActivity() != null){
-            View navBar = getActivity().findViewById(R.id.bottom_navigation);
-            if (navBar != null) {
-                navBar.setVisibility(View.VISIBLE);
-            }
-        }
-    }
 
 
 
 
     public void onDestroyView() {
         super.onDestroyView();
-        requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+        ((MainActivity) getActivity()).exitFullScreenMode();
+
     }
 }
 
