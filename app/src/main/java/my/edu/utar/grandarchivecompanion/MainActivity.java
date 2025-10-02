@@ -12,7 +12,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private boolean isFullScreen = false;
+    public boolean isFullScreen = false;
+
+    public boolean isFullScreen() {
+        return isFullScreen;
+    }
     private BottomNavigationView bottomNav;
 
     @Override
@@ -25,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
         // Load default fragment (Cards)
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
+                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                     .replace(R.id.fragment_container, new CardsFragment())
                     .commit();
         }

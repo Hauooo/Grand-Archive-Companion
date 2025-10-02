@@ -56,7 +56,7 @@ public class CounterFragment extends Fragment {
     //sound effects
     // MediaPlayer damageSound, healSound;
     private SoundPool soundPool;
-    private int damageSoundId, healSoundId;
+    private int damageSoundId, healSoundId, loseSoundId;
 
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
@@ -96,6 +96,7 @@ public class CounterFragment extends Fragment {
 
         damageSoundId = soundPool.load(getContext(), R.raw.damage_sound, 1);
         healSoundId = soundPool.load(getContext(), R.raw.heal_sound, 1);
+        loseSoundId = soundPool.load(getContext(), R.raw.lose_sound, 1);
 
         TextView counterValueA = view.findViewById(R.id.counter_value_a);
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
@@ -133,7 +134,13 @@ public class CounterFragment extends Fragment {
                     showChange(playerALayer, +1, true);
                     ChampionAnimationHelper.playDamage(player1background);
                     vibrate();
-                    playDamageSound();
+
+
+                    if (counterA >= 25) {
+                        playLoseSound();
+                    }else{
+                        playDamageSound();
+                    }
                 }
                 return true;
             }
@@ -163,7 +170,12 @@ public class CounterFragment extends Fragment {
                     showChange(playerBLayer, +1, false);
                     ChampionAnimationHelper.playDamage(player2background);
                     vibrate();
-                    playDamageSound();
+                    if (counterB >= 25) {
+                        playLoseSound();
+                    }else{
+                        playDamageSound();
+
+                    }
                 }
                 return true;
             }
@@ -193,11 +205,27 @@ public class CounterFragment extends Fragment {
             return true;
         });
 
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                MainActivity activity = (MainActivity) requireActivity();
+                if (activity.isFullScreen()){
+                    activity.exitFullScreenMode();
+                }
+                else {
+                    setEnabled(false);
+                    requireActivity().onBackPressed();
+                }
+            }
+        });
+
 
 
 
         return view;
     }
+
     private void showChange(FrameLayout playerLayer, int amount, boolean isPlayerA) {
         TextView changeText;
         int newValue;
@@ -314,6 +342,14 @@ public class CounterFragment extends Fragment {
         soundPool.play(healSoundId, 1, 1, 0, 0, 1);
     }
 
+    private void playLoseSound(){
+        soundPool.play(loseSoundId, 1, 1, 0, 0, 1f);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
 
     private void showChampionPicker(int player) {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
