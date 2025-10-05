@@ -1,9 +1,12 @@
 package my.edu.utar.grandarchivecompanion;
 
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -12,7 +15,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private boolean isFullScreen = false;
+    public boolean isFullScreen = false;
+
+    public boolean isFullScreen() {
+        return isFullScreen;
+    }
     private BottomNavigationView bottomNav;
 
     @Override
@@ -25,7 +32,8 @@ public class MainActivity extends AppCompatActivity {
         // Load default fragment (Cards)
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new CardsFragment())
+                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                    .replace(R.id.fragment_container, new CounterFragment())
                     .commit();
         }
 
@@ -55,15 +63,18 @@ public class MainActivity extends AppCompatActivity {
             public void handleOnBackPressed() {
                 if (isFullScreen) {
                     exitFullScreenMode();
-                }
-                else if(getSupportFragmentManager().getBackStackEntryCount() > 0){
-                    getSupportFragmentManager().popBackStack();
-                }
-                else {
-                    finish();
+                } else {
+                    setEnabled(false);
+                    onBackPressed();
                 }
             }
         });
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
     public void enterFullScreenMode() {
