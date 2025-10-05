@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
     <!-- Player B (Top Half) -->
     <FrameLayout
         android:id="@+id/player_b_container"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:rotation="180"
-        android:layout_weight="1">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/player_a_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!--Static Background-->
         <ImageView
             android:id="@+id/static_backgroundb"
             android:layout_width="match_parent"
@@ -20,30 +22,22 @@
             android:scaleType="centerCrop"
             android:src="@drawable/static_background" />
 
-
-
-
-
-        <!-- Background -->
         <ImageView
             android:id="@+id/player_b_background"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="top"
             android:alpha="0.5"
             android:scaleType="centerCrop"
             android:src="@drawable/lorraine" />
 
-        <!-- Life Counter -->
         <TextView
             android:id="@+id/counter_value_b"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:gravity="center"
             android:text="0"
-            android:textSize="96sp"
             android:textColor="@android:color/white"
+            android:textSize="96sp"
             android:shadowColor="#FF000000"
             android:shadowDx="4"
             android:shadowDy="8"
@@ -53,30 +47,21 @@
             android:id="@+id/damage_indicator_layer_b"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
             android:clickable="false"
-            android:focusable="false"
-            />
-
-        <!-- Change Champion Button -->
-        <Button
-            android:id="@+id/changeBackgroundButton2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Change"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="8dp" />
+            android:focusable="false" />
 
 
     </FrameLayout>
 
-
     <!-- Player A (Bottom Half) -->
     <FrameLayout
         android:id="@+id/player_a_container"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        app:layout_constraintTop_toBottomOf="@id/player_b_container"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
             android:id="@+id/static_backgrounda"
@@ -85,7 +70,6 @@
             android:scaleType="centerCrop"
             android:src="@drawable/static_background" />
 
-        <!-- Background -->
         <ImageView
             android:id="@+id/player_a_background"
             android:layout_width="match_parent"
@@ -94,14 +78,11 @@
             android:scaleType="centerCrop"
             android:src="@drawable/lorraine" />
 
-        <!-- Life Counter -->
-
         <TextView
             android:id="@+id/counter_value_a"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:gravity="center"
             android:text="0"
             android:textColor="@android:color/white"
             android:textSize="96sp"
@@ -110,26 +91,84 @@
             android:shadowDy="8"
             android:shadowRadius="16" />
 
-        <!-- Change Champion Button -->
         <FrameLayout
             android:id="@+id/damage_indicator_layer_a"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
             android:clickable="false"
             android:focusable="false" />
-
-        <Button
-            android:id="@+id/changeBackgroundButton1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Change"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="8dp" />
 
 
     </FrameLayout>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/alice"
+        app:backgroundTint="@color/white"
+        app:tint="@color/black"
+        app:maxImageSize="40dp"
+        app:useCompatPadding="true"
+        style="@style/Widget.MaterialComponents.FloatingActionButton"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_log"
+        style="@style/Widget.MaterialComponents.FloatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/diaochan"
+        app:backgroundTint="@color/white"
+        app:tint="@color/black"
+        app:maxImageSize="40dp"
+        app:useCompatPadding="true"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toBottomOf="@id/fab_main"
+        app:layout_constraintTop_toTopOf="@id/fab_main"
+        app:layout_constraintStart_toStartOf="@id/fab_main"
+        app:layout_constraintEnd_toEndOf="@id/fab_main" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_change_champion"
+        style="@style/Widget.MaterialComponents.FloatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/ciel"
+        app:backgroundTint="@color/white"
+        app:tint="@color/black"
+        app:maxImageSize="40dp"
+        app:useCompatPadding="true"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toBottomOf="@id/fab_main"
+        app:layout_constraintTop_toTopOf="@id/fab_main"
+        app:layout_constraintStart_toStartOf="@id/fab_main"
+        app:layout_constraintEnd_toEndOf="@id/fab_main" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_roll_dice"
+        style="@style/Widget.MaterialComponents.FloatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/arisanna"
+        app:backgroundTint="@color/white"
+        app:tint="@color/black"
+        app:maxImageSize="40dp"
+        app:useCompatPadding="true"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toBottomOf="@id/fab_main"
+        app:layout_constraintTop_toTopOf="@id/fab_main"
+        app:layout_constraintStart_toStartOf="@id/fab_main"
+        app:layout_constraintEnd_toEndOf="@id/fab_main" />
 
 
-</LinearLayout>
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
