@@ -1,46 +1,40 @@
+// java
 package my.edu.utar.grandarchivecompanion;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
-
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsetsController;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
-
-
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import my.edu.utar.grandarchivecompanion.ChampionAnimationHelper;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
-
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 
 public class CounterFragment extends Fragment {
 
     private ImageView player1background, player2background;
-    private Button changeBackgroundButton1, changeBackgroundButton2;
-
-
 
     private TextView activeChangeTextA = null;
     private TextView activeChangeTextB = null;
@@ -72,14 +66,12 @@ public class CounterFragment extends Fragment {
             R.drawable.merlin, R.drawable.silvie, R.drawable.tonoris, R.drawable.shadowdancer
     };
 
-
     private int counterA = 0;
     private int counterB = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
-
 
         ((MainActivity) getActivity()).enterFullScreenMode();
 
@@ -102,24 +94,25 @@ public class CounterFragment extends Fragment {
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
         player1background = view.findViewById(R.id.player_a_background);
         player2background = view.findViewById(R.id.player_b_background);
-        changeBackgroundButton1 = view.findViewById(R.id.changeBackgroundButton1);
-        changeBackgroundButton2 = view.findViewById(R.id.changeBackgroundButton2);
 
-        // Initialize gesture detector
+        FloatingActionButton fabMain = view.findViewById(R.id.fab_main);
+        FloatingActionButton fabLog = view.findViewById(R.id.fab_log);
+        FloatingActionButton fabChangeChampion = view.findViewById(R.id.fab_change_champion);
+        FloatingActionButton fabRollDice = view.findViewById(R.id.fab_roll_dice);
 
+        final boolean[] isFabOpen = {false};
 
         // Initial values
         counterValueA.setText(String.valueOf(counterA));
         counterValueB.setText(String.valueOf(counterB));
 
-        player1background.setOnTouchListener((v, event) -> {
+        player1background.setOnTouchListener((pViewA, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
-                float y = event.getY();
 
                 FrameLayout playerALayer = view.findViewById(R.id.damage_indicator_layer_a);
 
-                if (x < v.getWidth() / 2) {
+                if (x < pViewA.getWidth() / 2) {
                     if (counterA > 0) {
                         counterA--;
                         counterValueA.setText(String.valueOf(counterA));
@@ -147,15 +140,13 @@ public class CounterFragment extends Fragment {
             return false;
         });
 
-
-        player2background.setOnTouchListener((v, event) -> {
+        player2background.setOnTouchListener((pViewB, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
-                float y = event.getY();
 
                 FrameLayout playerBLayer = view.findViewById(R.id.damage_indicator_layer_b);
 
-                if (x < v.getWidth() / 2) {
+                if (x < pViewB.getWidth() / 2) {
                     if (counterB > 0) {
                         counterB--;
                         counterValueB.setText(String.valueOf(counterB));
@@ -182,45 +173,80 @@ public class CounterFragment extends Fragment {
             return false;
         });
 
-
-
-
-        // Let players choose champion by tapping their background
-        changeBackgroundButton1.setOnClickListener(v -> showChampionPicker(1));
-        changeBackgroundButton2.setOnClickListener(v -> showChampionPicker(2));
-
-        changeBackgroundButton2.setOnLongClickListener(v -> {
-            counterA = 0;
-            counterB = 0;
-            counterValueA.setText(String.valueOf(counterA));
-            counterValueB.setText(String.valueOf(counterB));
-            return true;
-        });
-
-        changeBackgroundButton1.setOnLongClickListener(v -> {
-            counterA = 0;
-            counterB = 0;
-            counterValueA.setText(String.valueOf(counterA));
-            counterValueB.setText(String.valueOf(counterB));
-            return true;
-        });
-
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                new androidx.activity.OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                MainActivity activity = (MainActivity) requireActivity();
-                if (activity.isFullScreen()){
-                    activity.exitFullScreenMode();
+        // FAB handlers
+        fabMain.setOnClickListener(v -> {
+            if (!isFabOpen[0]) {
+                FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice};
+                for (int i = 0; i < fabs.length; i++) {
+                    showFabInCircle(fabs[i], i, fabs.length, 80f); // radius 120dp
                 }
-                else {
-                    setEnabled(false);
-                    requireActivity().onBackPressed();
-                }
+                fabMain.animate().rotation(135f).setDuration(300).start();
+                isFabOpen[0] = true;
+            } else {
+                hideFab(fabLog);
+                hideFab(fabChangeChampion);
+                hideFab(fabRollDice);
+                fabMain.animate().rotation(0f).setDuration(300).start();
+                isFabOpen[0] = false;
             }
+            vibrate();
         });
 
 
+        fabLog.setOnClickListener(fabLogView -> {
+            // Example: show damage log (previously commented out)
+//            BottomSheetDialog logDialog = new BottomSheetDialog(requireContext());
+//            View logView = getLayoutInflater().inflate(R.layout.dialog_damage_log, null);
+//            logDialog.setContentView(logView);
+//
+//            RecyclerView logRecyclerView = logView.findViewById(R.id.log_recycler_view);
+//            logRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+//            logRecyclerView.setAdapter(new LogAdapter(damageLogs));
+//
+//            logDialog.show();
+
+
+            Toast.makeText(getContext(), "Damage Log feature coming soon!", Toast.LENGTH_SHORT).show();
+        });
+
+        fabMain.setOnLongClickListener(fabMainLongView -> {
+            counterA = 0;
+            counterB = 0;
+            counterValueA.setText(String.valueOf(counterA));
+            counterValueB.setText(String.valueOf(counterB));
+            vibrate();
+            return true;
+        });
+
+        fabChangeChampion.setOnClickListener(fabChangeView -> {
+            showChampionPicker(1);
+            showChampionPicker(2);
+            vibrate();
+        });
+
+        // Optional: dice roll FAB remains commented if not used
+
+        fabRollDice.setOnClickListener(v -> {
+            /*
+            BottomSheetDialog diceDialog = new BottomSheetDialog(requireContext());
+            View diceView = getLayoutInflater().inflate(R.layout.dialog_dice_roller, null);
+            diceDialog.setContentView(diceView);
+
+            Button rollD6Button = diceView.findViewById(R.id.roll_d6_button);
+            TextView diceResultText = diceView.findViewById(R.id.dice_result_text);
+
+            rollD6Button.setOnClickListener(v1 -> {
+                int result = (int) (Math.random() * 6) + 1;
+                diceResultText.setText("D6 Result: " + result);
+                vibrate();
+            });
+
+            diceDialog.show();
+
+             */
+
+            Toast.makeText(getContext(), "Dice Roller feature coming soon!", Toast.LENGTH_SHORT).show();
+        });
 
 
         return view;
@@ -250,7 +276,7 @@ public class CounterFragment extends Fragment {
                 changeText.setShadowLayer(8f, 4f, 4f, Color.BLACK);
             } else {
                 changeText = activeChangeTextA;
-                changeText.animate().cancel(); // cancel previous animation
+                changeText.animate().cancel();
                 changeText.setAlpha(1f);
                 changeText.setTranslationY(0f);
             }
@@ -285,17 +311,14 @@ public class CounterFragment extends Fragment {
             newValue = pendingChangeB;
         }
 
-        // Update text + color
         if (newValue > 0) {
             changeText.setText("+" + newValue);
             changeText.setTextColor(Color.WHITE);
-
         } else {
             changeText.setText(String.valueOf(newValue));
             changeText.setTextColor(Color.WHITE);
         }
 
-        // Restart animation from scratch
         changeText.animate()
                 .alpha(0f)
                 .translationY(-200f)
@@ -373,13 +396,71 @@ public class CounterFragment extends Fragment {
         dialog.show();
     }
 
+    private void showFabInCircle(FloatingActionButton fab, int index, int total, float radiusDp) {
+        float radiusPx = radiusDp * getResources().getDisplayMetrics().density;
+
+        // Calculate angle in radians (360° divided equally)
+        double angle = Math.toRadians((360.0 / total) * index);
+
+        float offsetX = (float) (Math.cos(angle) * radiusPx);
+        float offsetY = (float) (Math.sin(angle) * radiusPx);
+
+        fab.setVisibility(View.VISIBLE);
+        fab.setAlpha(0f);
+        fab.setTranslationX(0f);
+        fab.setTranslationY(0f);
+
+        fab.animate()
+                .translationX(offsetX)
+                .translationY(offsetY)
+                .alpha(1f)
+                .setDuration(300)
+                .setInterpolator(new OvershootInterpolator())
+                .start();
+    }
+
+    private void hideFab(FloatingActionButton fab) {
+        fab.animate()
+                .translationX(0f)
+                .translationY(0f)
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction(() -> fab.setVisibility(View.GONE))
+                .start();
+    }
 
 
+    private void hideFabHorizontally(FloatingActionButton fab) {
+        fab.animate()
+                .translationX(0f)
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction(() -> fab.setVisibility(View.GONE))
+                .start();
+    }
 
+    private void vibrate(){
+        Vibrator vibrator = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = requireContext().getSystemService(VibratorManager.class);
+            if (vibratorManager != null) {
+                vibrator = vibratorManager.getDefaultVibrator();
+            }
+        } else {
+            vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
+        }
 
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                // deprecated in API 26
+                vibrator.vibrate(50);
+            }
+        }
+    }
 
-
-
+    @Override
     public void onResume() {
         super.onResume();
 
@@ -398,20 +479,7 @@ public class CounterFragment extends Fragment {
         }
     }
 
-    public void onPause() {
-        super.onPause();
-
-        if (getActivity() != null){
-            View navBar = getActivity().findViewById(R.id.bottom_navigation);
-            if (navBar != null) {
-                navBar.setVisibility(View.VISIBLE);
-            }
-        }
-    }
-
-
-
-
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         ((MainActivity) getActivity()).exitFullScreenMode();
