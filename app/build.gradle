@@ -46,4 +46,7 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.8'
     implementation 'io.noties.markwon:core:4.6.2'
     implementation 'com.google.android.material:material:1.13.0'
+    def lifecycle_version = "2.7.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
 }
