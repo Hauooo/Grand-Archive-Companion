@@ -47,6 +47,9 @@ public class CounterFragment extends Fragment {
     private MaterialCardView logPanel;
     private ImageButton logPanelCloseButton;
     private boolean isLogPanelVisible = false;
+
+
+
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
             "Jin", "Kong Ming", "Lorraine", "Lu Bu", "Mordred", "Rai", "Zander", "Nico",
@@ -99,39 +102,13 @@ public class CounterFragment extends Fragment {
             logAdapter.updateLogs(logs); // Update the adapter with new logs
         });
 
-        player1background.setOnTouchListener((pViewA, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float x = event.getX();
-                int change = (x < pViewA.getWidth() / 2) ? -1 : 1;
+        // Setup for Player 1
+        View player1Indicator = view.findViewById(R.id.damage_indicator_layer_a);
+        setupPlayerTouchListener(player1background, player1Indicator, true);
 
-                viewModel.changeLife(true, change); // Tell the ViewModel what happened
-
-                // Keep the UI feedback in the Fragment
-                showChange(view.findViewById(R.id.damage_indicator_layer_a), change, true);
-                if (change > 0) ChampionAnimationHelper.playDamage(player1background);
-                else ChampionAnimationHelper.playHeal(player1background);
-                vibrate();
-                return true;
-            }
-            return false;
-        });
-
-        player2background.setOnTouchListener((pViewB, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float x = event.getX();
-                int change = (x < pViewB.getWidth() / 2) ? -1 : 1;
-
-                viewModel.changeLife(false, change); // Tell the ViewModel what happened
-
-                // Keep the UI feedback in the Fragment
-                showChange(view.findViewById(R.id.damage_indicator_layer_b), change, false);
-                if (change > 0) ChampionAnimationHelper.playDamage(player2background);
-                else ChampionAnimationHelper.playHeal(player2background);
-                vibrate();
-                return true;
-            }
-            return false;
-        });
+// Setup for Player 2
+        View player2Indicator = view.findViewById(R.id.damage_indicator_layer_b);
+        setupPlayerTouchListener(player2background, player2Indicator, false);
 
         //--- Find the new panel and its close button ---
         logPanel = view.findViewById(R.id.log_panel);
@@ -441,6 +418,53 @@ public class CounterFragment extends Fragment {
                 .withEndAction(() -> logPanel.setVisibility(View.INVISIBLE)) // Hide it after animation
                 .start();
         isLogPanelVisible = false;
+    }
+
+    private void setupPlayerTouchListener(final View backgroundView, final View indicatorView, final boolean isPlayer1) {
+        backgroundView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                // We only care about the initial touch down event
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    float x = event.getX();
+                    int requestedChange;
+
+                    // Determine the requested change based on which player it is.
+                    // Player 1 (bottom): Left is -1, Right is +1
+                    // Player 2 (top, mirrored): Left is +1, Right is -1
+                    if (isPlayer1) {
+                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
+                    } else {
+                        requestedChange = (x < view.getWidth() / 2) ? 1 : -1;
+                    }
+
+                    // Ask the ViewModel to apply the change and tell us what actually happened.
+                    final int actualChange = viewModel.changeLife(isPlayer1, requestedChange);
+
+                    // Only provide feedback if the life total was actually modified.
+                    if (actualChange != 0) {
+                        // Show the floating "+1" or "-1" text
+                        // THIS IS THE CORRECTED LINE:
+                        showChange((FrameLayout) indicatorView, actualChange, isPlayer1);
+
+                        // Play the correct animation based on the actual change
+                        if (actualChange > 0) {
+                            ChampionAnimationHelper.playHeal(backgroundView);
+                        } else {
+                            ChampionAnimationHelper.playDamage(backgroundView);
+                        }
+
+                        // Provide haptic feedback
+                        vibrate();
+                    }
+
+                    // We've handled the event, so return true.
+                    return true;
+                }
+                // Ignore other event types (move, up, etc.)
+                return false;
+            }
+        });
     }
 
     private void addCarouselZoomEffect(RecyclerView recyclerView) {
