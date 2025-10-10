@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".CounterFragment">
 
-    <!-- Player B (Top Half) -->
     <FrameLayout
         android:id="@+id/player_b_container"
         android:layout_width="0dp"
@@ -35,7 +36,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="0"
+            android:text="20"
             android:textColor="@android:color/white"
             android:textSize="96sp"
             android:shadowColor="#FF000000"
@@ -50,10 +51,8 @@
             android:clickable="false"
             android:focusable="false" />
 
-
     </FrameLayout>
 
-    <!-- Player A (Bottom Half) -->
     <FrameLayout
         android:id="@+id/player_a_container"
         android:layout_width="0dp"
@@ -83,7 +82,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="0"
+            android:text="20"
             android:textColor="@android:color/white"
             android:textSize="96sp"
             android:shadowColor="#FF000000"
@@ -98,8 +97,67 @@
             android:clickable="false"
             android:focusable="false" />
 
-
     </FrameLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/log_panel"
+        android:layout_width="280dp"
+        android:layout_height="0dp"
+        android:layout_marginVertical="16dp"
+        android:layout_marginEnd="16dp"
+        android:visibility="invisible"
+        android:translationX="300dp"
+        app:cardElevation="8dp"
+        app:cardCornerRadius="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible"
+        tools:translationX="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:text="Game Log"
+                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <ImageButton
+                    android:id="@+id/log_panel_close_button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Close Log Panel"
+                    android:src="@drawable/ic_close"/>
+
+            </RelativeLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/log_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp"
+                tools:listitem="@layout/log_item_row"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_main"
@@ -166,9 +224,5 @@
         app:layout_constraintTop_toTopOf="@id/fab_main"
         app:layout_constraintStart_toStartOf="@id/fab_main"
         app:layout_constraintEnd_toEndOf="@id/fab_main" />
-
-
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

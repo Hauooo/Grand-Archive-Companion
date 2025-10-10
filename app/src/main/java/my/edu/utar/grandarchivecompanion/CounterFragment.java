@@ -15,37 +15,39 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowInsetsController;
 import android.view.animation.OvershootInterpolator;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProvider;
+
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.card.MaterialCardView;
+import android.widget.ImageButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.ArrayList;
 
 public class CounterFragment extends Fragment {
 
     private ImageView player1background, player2background;
-
+    private CounterViewModel viewModel;
     private TextView activeChangeTextA = null;
     private TextView activeChangeTextB = null;
-
-    ArrayList<String> damageLogs = new ArrayList<>();
-    private void addLog(String entry){
-        damageLogs.add(entry);
-    }
-
     private int pendingChangeA = 0;
     private int pendingChangeB = 0;
+    private LogAdapter logAdapter;
+    private MaterialCardView logPanel;
+    private ImageButton logPanelCloseButton;
+    private boolean isLogPanelVisible = false;
 
     //sound effects
     // MediaPlayer damageSound, healSound;
@@ -55,7 +57,7 @@ public class CounterFragment extends Fragment {
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
             "Jin", "Kong Ming", "Lorraine", "Lu Bu", "Mordred", "Rai", "Zander", "Nico",
-            "Polkhawk", "Vanitas", "Merlin", "Silvie", "Tonoris", "Tristan, Shadow Dancer"
+            "Polkhawk", "Vanitas", "Merlin", "Silvie", "Tonoris", "Tristan"
     };
 
     private int[] championImages = {
@@ -66,12 +68,15 @@ public class CounterFragment extends Fragment {
             R.drawable.merlin, R.drawable.silvie, R.drawable.tonoris, R.drawable.shadowdancer
     };
 
-    private int counterA = 0;
-    private int counterB = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
+
+        viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
+
+        //--Initialize the Log Adapter ---
+        logAdapter = new LogAdapter();
 
         ((MainActivity) getActivity()).enterFullScreenMode();
 
@@ -102,39 +107,32 @@ public class CounterFragment extends Fragment {
 
         final boolean[] isFabOpen = {false};
 
-        // Initial values
-        counterValueA.setText(String.valueOf(counterA));
-        counterValueB.setText(String.valueOf(counterB));
+        // --- OBSERVE the LiveData from ViewModel ---
+        viewModel.getLifeA().observe(getViewLifecycleOwner(), value -> counterValueA.setText(String.valueOf(value)));
+        viewModel.getLifeB().observe(getViewLifecycleOwner(), value -> counterValueB.setText(String.valueOf(value)));
+
+        //Observe logs for RecyclerView (if needed in future)
+        viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
+            //Update RecyclerView adapter with new logs
+        });
+
+        // --- Update the Observer for log entries ---
+        viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
+            logAdapter.updateLogs(logs); // Update the adapter with new logs
+        });
 
         player1background.setOnTouchListener((pViewA, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
+                int change = (x < pViewA.getWidth() / 2) ? -1 : 1;
 
-                FrameLayout playerALayer = view.findViewById(R.id.damage_indicator_layer_a);
+                viewModel.changeLife(true, change); // Tell the ViewModel what happened
 
-                if (x < pViewA.getWidth() / 2) {
-                    if (counterA > 0) {
-                        counterA--;
-                        counterValueA.setText(String.valueOf(counterA));
-                        showChange(playerALayer, -1, true);
-                        ChampionAnimationHelper.playHeal(player1background);
-                        vibrate();
-                        playHealSound();
-                    }
-                } else {
-                    counterA++;
-                    counterValueA.setText(String.valueOf(counterA));
-                    showChange(playerALayer, +1, true);
-                    ChampionAnimationHelper.playDamage(player1background);
-                    vibrate();
-
-
-                    if (counterA >= 25) {
-                        playLoseSound();
-                    }else{
-                        playDamageSound();
-                    }
-                }
+                // Keep the UI feedback in the Fragment
+                showChange(view.findViewById(R.id.damage_indicator_layer_a), change, true);
+                if (change > 0) ChampionAnimationHelper.playDamage(player1background);
+                else ChampionAnimationHelper.playHeal(player1background);
+                vibrate();
                 return true;
             }
             return false;
@@ -143,35 +141,23 @@ public class CounterFragment extends Fragment {
         player2background.setOnTouchListener((pViewB, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
+                int change = (x < pViewB.getWidth() / 2) ? -1 : 1;
 
-                FrameLayout playerBLayer = view.findViewById(R.id.damage_indicator_layer_b);
+                viewModel.changeLife(false, change); // Tell the ViewModel what happened
 
-                if (x < pViewB.getWidth() / 2) {
-                    if (counterB > 0) {
-                        counterB--;
-                        counterValueB.setText(String.valueOf(counterB));
-                        showChange(playerBLayer, -1, false);
-                        ChampionAnimationHelper.playHeal(player2background);
-                        vibrate();
-                        playHealSound();
-                    }
-                } else {
-                    counterB++;
-                    counterValueB.setText(String.valueOf(counterB));
-                    showChange(playerBLayer, +1, false);
-                    ChampionAnimationHelper.playDamage(player2background);
-                    vibrate();
-                    if (counterB >= 25) {
-                        playLoseSound();
-                    }else{
-                        playDamageSound();
-
-                    }
-                }
+                // Keep the UI feedback in the Fragment
+                showChange(view.findViewById(R.id.damage_indicator_layer_b), change, false);
+                if (change > 0) ChampionAnimationHelper.playDamage(player2background);
+                else ChampionAnimationHelper.playHeal(player2background);
+                vibrate();
                 return true;
             }
             return false;
         });
+
+        //--- Find the new panel and its close button ---
+        logPanel = view.findViewById(R.id.log_panel);
+        logPanelCloseButton = view.findViewById(R.id.log_panel_close_button);
 
         // FAB handlers
         fabMain.setOnClickListener(v -> {
@@ -182,39 +168,46 @@ public class CounterFragment extends Fragment {
                 }
                 fabMain.animate().rotation(135f).setDuration(300).start();
                 isFabOpen[0] = true;
+                fabMain.setImageResource(R.drawable.ic_refresh);
             } else {
                 hideFab(fabLog);
                 hideFab(fabChangeChampion);
                 hideFab(fabRollDice);
                 fabMain.animate().rotation(0f).setDuration(300).start();
                 isFabOpen[0] = false;
+                fabMain.setImageResource(R.drawable.list_icon);
             }
+
             vibrate();
         });
 
 
-        fabLog.setOnClickListener(fabLogView -> {
-            // Example: show damage log (previously commented out)
-//            BottomSheetDialog logDialog = new BottomSheetDialog(requireContext());
-//            View logView = getLayoutInflater().inflate(R.layout.dialog_damage_log, null);
-//            logDialog.setContentView(logView);
-//
-//            RecyclerView logRecyclerView = logView.findViewById(R.id.log_recycler_view);
-//            logRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-//            logRecyclerView.setAdapter(new LogAdapter(damageLogs));
-//
-//            logDialog.show();
+        fabLog.setOnClickListener(v -> {
+            showLogPanel();
+            vibrate();
+        });
 
+        logPanelCloseButton.setOnClickListener(v -> {
+            hideLogPanel();
+            vibrate();
+        });
 
-            Toast.makeText(getContext(), "Damage Log feature coming soon!", Toast.LENGTH_SHORT).show();
+        logAdapter = new LogAdapter(); // Make sure logAdapter is a member variable
+        RecyclerView logRecyclerView = view.findViewById(R.id.log_recycler_view);
+        logRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        logRecyclerView.setAdapter(logAdapter);
+
+        // This observer will now automatically update the recycler view inside the panel
+        viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
+            if (logAdapter != null) {
+                logAdapter.updateLogs(logs);
+            }
         });
 
         fabMain.setOnLongClickListener(fabMainLongView -> {
-            counterA = 0;
-            counterB = 0;
-            counterValueA.setText(String.valueOf(counterA));
-            counterValueB.setText(String.valueOf(counterB));
+            viewModel.resetLife(); // Just tell the ViewModel to reset
             vibrate();
+            Toast.makeText(getContext(), "Game Reset!", Toast.LENGTH_SHORT).show();
             return true;
         });
 
@@ -376,23 +369,38 @@ public class CounterFragment extends Fragment {
 
     private void showChampionPicker(int player) {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_champion_picker, null);
+        // 1. Inflate the new carousel layout
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_champion_carousel, null);
         dialog.setContentView(dialogView);
 
-        RecyclerView recyclerView = dialogView.findViewById(R.id.champion_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        RecyclerView recyclerView = dialogView.findViewById(R.id.champion_carousel_recycler_view);
 
-        if (player == 2){
-            dialogView.setRotation(180);
-        }
-        recyclerView.setAdapter(new ChampionAdapter(champions, championImages, position -> {
+        // 2. Set the LayoutManager to be HORIZONTAL
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layoutManager);
+
+        // 3. Attach the magic SnapHelper to the RecyclerView. This makes it snap to the center.
+        LinearSnapHelper snapHelper = new LinearSnapHelper();
+        snapHelper.attachToRecyclerView(recyclerView);
+        // In showChampionPicker, after snapHelper.attachToRecyclerView(recyclerView);
+        addCarouselZoomEffect(recyclerView);
+
+        // 4. Set your updated adapter
+        ChampionAdapter adapter = new ChampionAdapter(champions, championImages, position -> {
             if (player == 1) {
                 player1background.setImageResource(championImages[position]);
             } else {
                 player2background.setImageResource(championImages[position]);
             }
             dialog.dismiss();
-        }));
+        });
+        recyclerView.setAdapter(adapter);
+
+        // For Player 2, we still rotate the entire dialog view.
+        if (player == 2) {
+            dialogView.setRotation(180);
+        }
+
         dialog.show();
     }
 
@@ -465,6 +473,56 @@ public class CounterFragment extends Fragment {
         super.onDestroyView();
         ((MainActivity) getActivity()).exitFullScreenMode();
 
+    }
+
+    // Add these two new methods anywhere inside your CounterFragment class
+
+    private void showLogPanel() {
+        if (isLogPanelVisible) return;
+
+        // Make it visible and animate it in from the right
+        logPanel.setVisibility(View.VISIBLE);
+        logPanel.animate()
+                .translationX(0) // Move to its original position
+                .setDuration(300)
+                .setInterpolator(new OvershootInterpolator(0.8f))
+                .start();
+        isLogPanelVisible = true;
+    }
+
+    private void hideLogPanel() {
+        if (!isLogPanelVisible) return;
+
+        // Animate it out to the right
+        logPanel.animate()
+                .translationX(logPanel.getWidth() + 50) // Move it off-screen
+                .setDuration(250)
+                .withEndAction(() -> logPanel.setVisibility(View.INVISIBLE)) // Hide it after animation
+                .start();
+        isLogPanelVisible = false;
+    }
+
+    private void addCarouselZoomEffect(RecyclerView recyclerView) {
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                float midPoint = recyclerView.getWidth() / 2f;
+                for (int i = 0; i < recyclerView.getChildCount(); i++) {
+                    View child = recyclerView.getChildAt(i);
+                    float childMidPoint = (child.getLeft() + child.getRight()) / 2f;
+                    float distanceFromCenter = Math.abs(midPoint - childMidPoint);
+
+                    // Scale the item based on its distance from the center.
+                    // The closer to the center, the larger it is (closer to 1.0f).
+                    // The further away, the smaller it is (closer to 0.8f).
+                    float scale = 1f - (distanceFromCenter / midPoint) * 0.2f; // 0.2f is the amount to shrink
+                    child.setScaleX(Math.max(0.8f, scale));
+                    child.setScaleY(Math.max(0.8f, scale));
+                }
+            }
+        });
     }
 }
 

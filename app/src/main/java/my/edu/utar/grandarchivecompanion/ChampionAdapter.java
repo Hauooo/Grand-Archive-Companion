@@ -4,54 +4,58 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class ChampionAdapter extends RecyclerView.Adapter<ChampionAdapter.ViewHolder> {
+public class ChampionAdapter extends RecyclerView.Adapter<ChampionAdapter.ChampionViewHolder> {
 
+    // An interface to handle clicks
     public interface OnChampionClickListener {
         void onChampionClick(int position);
     }
 
-    private String[] champions;
+    private String[] championNames;
     private int[] championImages;
     private OnChampionClickListener listener;
 
-    public ChampionAdapter(String[] champions, int[] championImages, OnChampionClickListener listener) {
-        this.champions = champions;
-        this.championImages = championImages;
+    public ChampionAdapter(String[] names, int[] images, OnChampionClickListener listener) {
+        this.championNames = names;
+        this.championImages = images;
         this.listener = listener;
     }
 
     @NonNull
     @Override
-    public ChampionAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_champion, parent, false);
-        return new ViewHolder(view);
+    public ChampionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // MODIFIED: Inflate our new carousel item layout
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.carousel_item_champion, parent, false);
+        return new ChampionViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ChampionAdapter.ViewHolder holder, int position) {
-        holder.championName.setText(champions[position]);
-        holder.championIcon.setImageResource(championImages[position]);
-        holder.itemView.setOnClickListener(v -> listener.onChampionClick(position));
+    public void onBindViewHolder(@NonNull ChampionViewHolder holder, int position) {
+        holder.championImageView.setImageResource(championImages[position]);
+
+        // Set the click listener on the item view
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onChampionClick(holder.getAdapterPosition());
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        return champions.length;
+        return championNames.length;
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView championIcon;
-        TextView championName;
+    static class ChampionViewHolder extends RecyclerView.ViewHolder {
+        // MODIFIED: Reference the ImageView from our new layout
+        ImageView championImageView;
 
-        public ViewHolder(View itemView) {
+        public ChampionViewHolder(@NonNull View itemView) {
             super(itemView);
-            championIcon = itemView.findViewById(R.id.champion_icon);
-            championName = itemView.findViewById(R.id.champion_name);
+            championImageView = itemView.findViewById(R.id.champion_image_view);
         }
     }
 }
