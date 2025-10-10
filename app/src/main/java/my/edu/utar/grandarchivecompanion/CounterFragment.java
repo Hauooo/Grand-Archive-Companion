@@ -48,6 +48,9 @@ public class CounterFragment extends Fragment {
     private MaterialCardView logPanel;
     private ImageButton logPanelCloseButton;
     private boolean isLogPanelVisible = false;
+    private boolean areSoundsUnlocked = false;
+    private static final String PREFS_NAME = "GrandArchivePrefs";
+    private static final String SOUNDS_UNLOCKED_KEY = "sounds_unlocked";
     private boolean hasPlayerALost = false;
     private boolean hasPlayerBLost = false;
 
@@ -76,6 +79,14 @@ public class CounterFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
 
         viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
+
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        areSoundsUnlocked = prefs.getBoolean(SOUNDS_UNLOCKED_KEY, false);
+        if (areSoundsUnlocked) {
+            Toast.makeText(getContext(), "Secret Sounds are Active!", Toast.LENGTH_SHORT).show();
+        }
+
+
 
         //--Initialize the Log Adapter ---
         logAdapter = new LogAdapter();
@@ -125,6 +136,38 @@ public class CounterFragment extends Fragment {
 
         // In onCreateView, after initializing the ViewModel
 
+
+        viewModel.getLifeA().observe(getViewLifecycleOwner(), life -> {
+            counterValueA.setText(String.valueOf(life));
+
+            // --- NEW: Check for the magic number ---
+            if (life == 4492) {
+                unlockSounds();
+            }
+
+            // Your existing lose sound logic
+            if (life >= 25 && !hasPlayerALost) {
+                playLoseSound();
+                hasPlayerALost = true;
+            }
+        });
+
+        viewModel.getLifeB().observe(getViewLifecycleOwner(), life -> {
+            counterValueB.setText(String.valueOf(life));
+
+            // --- NEW: Check for the magic number ---
+            if (life == 4492) {
+                unlockSounds();
+            }
+
+            // Your existing lose sound logic
+            if (life >= 25 && !hasPlayerBLost) {
+                playLoseSound();
+                hasPlayerBLost = true;
+            }
+        });
+
+
         // In onCreateView()
 
         viewModel.getLifeA().observe(getViewLifecycleOwner(), life -> {
@@ -160,10 +203,10 @@ public class CounterFragment extends Fragment {
                 showChange(view.findViewById(R.id.damage_indicator_layer_a), change, true);
                 if (change > 0) {
                     ChampionAnimationHelper.playDamage(player1background);
-                    playDamageSound();
+                    playDamageSound(); // This will now be gated
                 } else {
                     ChampionAnimationHelper.playHeal(player1background);
-                    playHealSound();
+                    playHealSound(); // This will now be gated
                 }
                 vibrate();
                 return true;
@@ -180,8 +223,13 @@ public class CounterFragment extends Fragment {
 
                 // Keep the UI feedback in the Fragment
                 showChange(view.findViewById(R.id.damage_indicator_layer_b), change, false);
-                if (change > 0) ChampionAnimationHelper.playDamage(player2background);
-                else ChampionAnimationHelper.playHeal(player2background);
+                if (change > 0) {
+                    ChampionAnimationHelper.playDamage(player2background);
+                    playDamageSound(); // This will now be gated
+                } else {
+                    ChampionAnimationHelper.playHeal(player2background);
+                    playHealSound(); // This will now be gated
+                }
                 vibrate();
                 return true;
             }
@@ -386,14 +434,17 @@ public class CounterFragment extends Fragment {
     }
 
     private void playDamageSound(){
+        if (!areSoundsUnlocked) return; // The "gate"
         soundPool.play(damageSoundId, 1, 1, 0, 0, 1);
     }
 
     private void playHealSound(){
+        if (!areSoundsUnlocked) return; // The "gate"
         soundPool.play(healSoundId, 1, 1, 0, 0, 1);
     }
 
     private void playLoseSound(){
+        if (!areSoundsUnlocked) return; // The "gate"
         soundPool.play(loseSoundId, 1, 1, 0, 0, 1f);
     }
 
@@ -473,14 +524,6 @@ public class CounterFragment extends Fragment {
     }
 
 
-    private void hideFabHorizontally(FloatingActionButton fab) {
-        fab.animate()
-                .translationX(0f)
-                .alpha(0f)
-                .setDuration(200)
-                .withEndAction(() -> fab.setVisibility(View.GONE))
-                .start();
-    }
 
 
 
@@ -558,6 +601,26 @@ public class CounterFragment extends Fragment {
                 }
             }
         });
+    }
+
+    // Add this new method to CounterFragment.java
+
+    private void unlockSounds() {
+        // Check if sounds are already unlocked to prevent this from running multiple times.
+        if (areSoundsUnlocked) return;
+
+        areSoundsUnlocked = true;
+
+        // Provide immediate feedback to the user!
+        Toast.makeText(getContext(), "SECRET SOUNDS UNLOCKED!", Toast.LENGTH_LONG).show();
+        playHealSound(); // Play a confirmation sound
+        vibrate();
+
+        // --- NEW: Save the unlocked state permanently ---
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        android.content.SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(SOUNDS_UNLOCKED_KEY, true);
+        editor.apply();
     }
 }
 
