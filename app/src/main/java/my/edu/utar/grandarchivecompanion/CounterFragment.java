@@ -48,6 +48,8 @@ public class CounterFragment extends Fragment {
     private MaterialCardView logPanel;
     private ImageButton logPanelCloseButton;
     private boolean isLogPanelVisible = false;
+    private boolean hasPlayerALost = false;
+    private boolean hasPlayerBLost = false;
 
     //sound effects
     // MediaPlayer damageSound, healSound;
@@ -121,6 +123,32 @@ public class CounterFragment extends Fragment {
             logAdapter.updateLogs(logs); // Update the adapter with new logs
         });
 
+        // In onCreateView, after initializing the ViewModel
+
+        // In onCreateView()
+
+        viewModel.getLifeA().observe(getViewLifecycleOwner(), life -> {
+            counterValueA.setText(String.valueOf(life));
+            // Check if life is 25 or more AND the sound hasn't been played yet
+            if (life >= 25 && !hasPlayerALost) {
+                playLoseSound();
+                hasPlayerALost = true; // Set the flag so it doesn't play again
+            }
+        });
+
+
+        viewModel.getLifeB().observe(getViewLifecycleOwner(), life -> {
+        counterValueB.setText(String.valueOf(life));
+        // Check if life is 25 or more AND the sound hasn't been played yet
+        if (life >= 25 && !hasPlayerBLost) {
+            playLoseSound();
+            hasPlayerBLost = true; // Set the flag so it doesn't play again
+        }
+    });
+
+
+
+
         player1background.setOnTouchListener((pViewA, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
@@ -130,8 +158,13 @@ public class CounterFragment extends Fragment {
 
                 // Keep the UI feedback in the Fragment
                 showChange(view.findViewById(R.id.damage_indicator_layer_a), change, true);
-                if (change > 0) ChampionAnimationHelper.playDamage(player1background);
-                else ChampionAnimationHelper.playHeal(player1background);
+                if (change > 0) {
+                    ChampionAnimationHelper.playDamage(player1background);
+                    playDamageSound();
+                } else {
+                    ChampionAnimationHelper.playHeal(player1background);
+                    playHealSound();
+                }
                 vibrate();
                 return true;
             }
@@ -206,6 +239,8 @@ public class CounterFragment extends Fragment {
 
         fabMain.setOnLongClickListener(fabMainLongView -> {
             viewModel.resetLife(); // Just tell the ViewModel to reset
+            hasPlayerALost = false; // Reset the flags
+            hasPlayerBLost = false;
             vibrate();
             Toast.makeText(getContext(), "Game Reset!", Toast.LENGTH_SHORT).show();
             return true;
@@ -342,7 +377,7 @@ public class CounterFragment extends Fragment {
 
         if (vibrator != null && vibrator.hasVibrator()) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(1000, 255));
+                vibrator.vibrate(VibrationEffect.createOneShot(50, 50));
             } else {
                 //deprecated in API 26
                 vibrator.vibrate(50);
