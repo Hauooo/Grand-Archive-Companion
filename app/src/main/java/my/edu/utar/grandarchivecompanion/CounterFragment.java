@@ -13,8 +13,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -196,25 +198,8 @@ public class CounterFragment extends Fragment {
         // Optional: dice roll FAB remains commented if not used
 
         fabRollDice.setOnClickListener(v -> {
-            /*
-            BottomSheetDialog diceDialog = new BottomSheetDialog(requireContext());
-            View diceView = getLayoutInflater().inflate(R.layout.dialog_dice_roller, null);
-            diceDialog.setContentView(diceView);
-
-            Button rollD6Button = diceView.findViewById(R.id.roll_d6_button);
-            TextView diceResultText = diceView.findViewById(R.id.dice_result_text);
-
-            rollD6Button.setOnClickListener(v1 -> {
-                int result = (int) (Math.random() * 6) + 1;
-                diceResultText.setText("D6 Result: " + result);
-                vibrate();
-            });
-
-            diceDialog.show();
-
-             */
-
-            Toast.makeText(getContext(), "Dice Roller feature coming soon!", Toast.LENGTH_SHORT).show();
+            showDiceRollerPopup(v); // 'v' is the FAB button itself
+            vibrate();
         });
 
 
@@ -480,4 +465,86 @@ public class CounterFragment extends Fragment {
             }
         });
     }
+
+    // Add these three new methods to CounterFragment.java
+
+    // In CounterFragment.java
+
+    private void showDiceRollerPopup(View anchorView) {
+        LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.popup_dice_roller, null);
+
+        final PopupWindow popupWindow = new PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popupWindow.setElevation(20);
+
+        // --- MODIFIED: Find all the views for BOTH players ---
+        // Player A (Bottom)
+        ImageView diceImageA1 = popupView.findViewById(R.id.dice_image_view_a1);
+        ImageView diceImageA2 = popupView.findViewById(R.id.dice_image_view_a2);
+        TextView resultTextA = popupView.findViewById(R.id.dice_result_text_a);
+        Button roll2D6ButtonA = popupView.findViewById(R.id.roll_2d6_button_a);
+
+
+        // Player B (Top)
+        ImageView diceImageB1 = popupView.findViewById(R.id.dice_image_view_b1);
+        ImageView diceImageB2 = popupView.findViewById(R.id.dice_image_view_b2);
+        TextView resultTextB = popupView.findViewById(R.id.dice_result_text_b);
+        Button roll2D6ButtonB = popupView.findViewById(R.id.roll_2d6_button_b);
+
+
+        // --- MODIFIED: Both sets of buttons call the same logic ---
+        // Pass all the necessary views to the roll methods.
+        View.OnClickListener roll2d6Listener = v -> rollTwoDice(diceImageA1, diceImageA2, resultTextA, diceImageB1, diceImageB2, resultTextB);
+        roll2D6ButtonA.setOnClickListener(roll2d6Listener);
+        roll2D6ButtonB.setOnClickListener(roll2d6Listener);
+
+        View.OnClickListener flipCoinListener = v -> {
+            // Hide the second die for both players for a cleaner look
+            diceImageA2.setVisibility(View.INVISIBLE);
+            diceImageB2.setVisibility(View.INVISIBLE);
+        };
+
+
+        popupWindow.showAtLocation(anchorView, Gravity.CENTER, 0, 0);
+    }
+
+    // MODIFIED: Method now takes views for both players
+    private void rollTwoDice(ImageView dieA1, ImageView dieA2, TextView resultA, ImageView dieB1, ImageView dieB2, TextView resultB) {
+        // Make sure all dice are visible
+        dieA1.setVisibility(View.VISIBLE);
+        dieA2.setVisibility(View.VISIBLE);
+        dieB1.setVisibility(View.VISIBLE);
+        dieB2.setVisibility(View.VISIBLE);
+
+        // Animate all dice
+        dieA1.animate().rotationBy(360f).setDuration(500).start();
+        dieB1.animate().rotationBy(360f).setDuration(500).start();
+        dieA2.animate().rotationBy(-360f).setDuration(500).start();
+
+        // The end action only needs to be on one animation to run the logic once.
+        dieB2.animate()
+                .rotationBy(-360f)
+                .setDuration(500)
+                .withEndAction(() -> {
+                    int result1 = (int) (Math.random() * 6) + 1;
+                    int result2 = (int) (Math.random() * 6) + 1;
+                    int sum = result1 + result2;
+                    String resultString = String.format("Rolled %d & %d (Total: %d)", result1, result2, sum);
+
+                    int[] dieFaces = { R.drawable.ic_dice_1, R.drawable.ic_dice_2, R.drawable.ic_dice_3, R.drawable.ic_dice_4, R.drawable.ic_dice_5, R.drawable.ic_dice_6 };
+
+                    // Update UI for BOTH players with the same result
+                    dieA1.setImageResource(dieFaces[result1 - 1]);
+                    dieA2.setImageResource(dieFaces[result2 - 1]);
+                    resultA.setText(resultString);
+
+                    dieB1.setImageResource(dieFaces[result1 - 1]);
+                    dieB2.setImageResource(dieFaces[result2 - 1]);
+                    resultB.setText(resultString);
+
+                    vibrate();
+                }).start();
+    }
+
+
 }
