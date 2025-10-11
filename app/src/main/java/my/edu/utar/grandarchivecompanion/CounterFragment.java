@@ -34,6 +34,8 @@ import android.widget.ImageButton;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import kotlin.random.Random;
+
 
 public class CounterFragment extends Fragment {
 
@@ -518,57 +520,58 @@ public class CounterFragment extends Fragment {
 
         // --- MODIFIED: Both sets of buttons call the same logic ---
         // Pass all the necessary views to the roll methods.
-        View.OnClickListener roll2d6Listener = v -> rollTwoDice(diceImageA1, diceImageA2, resultTextA, diceImageB1, diceImageB2, resultTextB);
-        roll2D6ButtonA.setOnClickListener(roll2d6Listener);
-        roll2D6ButtonB.setOnClickListener(roll2d6Listener);
+        View.OnClickListener roll2d6ListenerA = v -> rollTwoDice(diceImageA1, diceImageA2, resultTextA);
+        roll2D6ButtonA.setOnClickListener(roll2d6ListenerA);
 
-        View.OnClickListener flipCoinListener = v -> {
-            // Hide the second die for both players for a cleaner look
-            diceImageA2.setVisibility(View.INVISIBLE);
-            diceImageB2.setVisibility(View.INVISIBLE);
-        };
+
+        View.OnClickListener roll2d6ListenerB = v -> rollTwoDice(diceImageB1, diceImageB2, resultTextB);
+        roll2D6ButtonB.setOnClickListener(roll2d6ListenerB);
+
+
+
 
 
         popupWindow.showAtLocation(anchorView, Gravity.CENTER, 0, 0);
     }
 
     // MODIFIED: Method now takes views for both players
-    private void rollTwoDice(ImageView dieA1, ImageView dieA2, TextView resultA, ImageView dieB1, ImageView dieB2, TextView resultB) {
-        // Make sure all dice are visible
-        dieA1.setVisibility(View.VISIBLE);
-        dieA2.setVisibility(View.VISIBLE);
-        dieB1.setVisibility(View.VISIBLE);
-        dieB2.setVisibility(View.VISIBLE);
+    private void rollTwoDice(ImageView die1, ImageView die2, TextView resultTextView) {
+        // Make sure both dice are visible before animating
+        die1.setVisibility(View.VISIBLE);
+        die2.setVisibility(View.VISIBLE);
 
-        // Animate all dice
-        dieA1.animate().rotationBy(360f).setDuration(500).start();
-        dieB1.animate().rotationBy(360f).setDuration(500).start();
-        dieA2.animate().rotationBy(-360f).setDuration(500).start();
+        // Animate the dice for visual effect
+        die1.animate().rotationBy(360f).setDuration(500).start();
 
-        // The end action only needs to be on one animation to run the logic once.
-        dieB2.animate()
+        // The end action is attached to only one animation to ensure the logic runs just once.
+        die2.animate()
                 .rotationBy(-360f)
                 .setDuration(500)
                 .withEndAction(() -> {
-                    int result1 = (int) (Math.random() * 6) + 1;
-                    int result2 = (int) (Math.random() * 6) + 1;
+                    // Generate random numbers for two dice
+                    java.util.Random random = new java.util.Random();
+                    int result1 = random.nextInt(6) + 1; // Generates a number between 1 and 6
+                    int result2 = random.nextInt(6) + 1; // Generates a number between 1 and 6
                     int sum = result1 + result2;
-                    String resultString = String.format("Rolled %d & %d (Total: %d)", result1, result2, sum);
 
-                    int[] dieFaces = { R.drawable.ic_dice_1, R.drawable.ic_dice_2, R.drawable.ic_dice_3, R.drawable.ic_dice_4, R.drawable.ic_dice_5, R.drawable.ic_dice_6 };
-
-                    // Update UI for BOTH players with the same result
-                    dieA1.setImageResource(dieFaces[result1 - 1]);
-                    dieA2.setImageResource(dieFaces[result2 - 1]);
-                    resultA.setText(resultString);
-
-                    dieB1.setImageResource(dieFaces[result1 - 1]);
-                    dieB2.setImageResource(dieFaces[result2 - 1]);
-                    resultB.setText(resultString);
-
-                    vibrate();
+                    updateDiceUI(die1, die2, resultTextView, result1, result2, sum);
+                    vibrate(); // Assuming vibrate() is a method in your class
                 }).start();
     }
 
+    /**
+     * Updates the ImageViews and TextView with the new dice roll results.
+     */
+    private void updateDiceUI(ImageView die1, ImageView die2, TextView resultTextView, int result1, int result2, int sum) {
+        int[] dieFaces = {
+                R.drawable.ic_dice_1, R.drawable.ic_dice_2, R.drawable.ic_dice_3,
+                R.drawable.ic_dice_4, R.drawable.ic_dice_5, R.drawable.ic_dice_6
+        };
 
+        String resultString = String.format("Rolled %d & %d (Total: %d)", result1, result2, sum);
+
+        die1.setImageResource(dieFaces[result1 - 1]);
+        die2.setImageResource(dieFaces[result2 - 1]);
+        resultTextView.setText(resultString);
+    }
 }
