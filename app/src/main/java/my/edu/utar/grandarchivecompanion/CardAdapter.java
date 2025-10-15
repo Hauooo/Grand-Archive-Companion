@@ -5,29 +5,22 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.squareup.picasso.Picasso;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder> implements Filterable {
+public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder>{
 
-    private Context context;
-    private List<CardItem> cardList;
-    private List<CardItem> cardListFull; // backup copy for filtering
+    private final Context context;
+    private List<CardItem> cardList = new ArrayList<>();
 
-    public CardAdapter(Context context, List<CardItem> cardList) {
+    public CardAdapter(Context context){
         this.context = context;
-        this.cardList = cardList;
-        this.cardListFull = new ArrayList<>(cardList);
     }
 
     @NonNull
@@ -50,10 +43,10 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, CardDetailActivity.class);
-            intent.putExtra("imageUrl", card.getImageUrl());
-            intent.putExtra("name", card.getName());
-            intent.putExtra("type", card.getType());
-            intent.putExtra("text", card.getText());
+            intent.putExtra(CardDetailActivity.EXTRA_IMAGE_URL, card.getImageUrl());
+            intent.putExtra(CardDetailActivity.EXTRA_NAME, card.getName());
+            intent.putExtra(CardDetailActivity.EXTRA_TYPE, card.getType());
+            intent.putExtra(CardDetailActivity.EXTRA_TEXT, card.getText());
             context.startActivity(intent);
         });
     }
@@ -64,41 +57,13 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     }
 
     // 🔎 Implement filtering
-    @Override
-    public Filter getFilter() {
-        return cardFilter;
+   public void updateList(List<CardItem> newList) {
+        CardDiffcallback diffCallback = new CardDiffcallback(this.cardList, newList);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
+        this.cardList.clear();
+        this.cardList.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
-
-    private final Filter cardFilter = new Filter() {
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            List<CardItem> filteredList = new ArrayList<>();
-
-            if (constraint == null || constraint.length() == 0) {
-                filteredList.addAll(cardListFull);
-            } else {
-                String filterPattern = constraint.toString().toLowerCase().trim();
-
-                for (CardItem item : cardListFull) {
-                    if (item.getName().toLowerCase().contains(filterPattern)) {
-                        filteredList.add(item);
-                    }
-                }
-            }
-
-            FilterResults results = new FilterResults();
-            results.values = filteredList;
-            return results;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-            cardList.clear();
-            cardList.addAll((List<CardItem>) results.values);
-            notifyDataSetChanged();
-        }
-    };
 
     static class CardViewHolder extends RecyclerView.ViewHolder {
         TextView cardName;
@@ -109,5 +74,35 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
             cardName = itemView.findViewById(R.id.card_name);
             cardImage = itemView.findViewById(R.id.card_image);
         }
+    }
+}
+
+class CardDiffcallback extends DiffUtil.Callback {
+    private final List<CardItem> oldList;
+    private final List<CardItem> newList;
+
+    public CardDiffcallback(List<CardItem> oldList, List<CardItem> newList) {
+        this.oldList = oldList;
+        this.newList = newList;
+    }
+
+    @Override
+    public int getOldListSize() {
+        return oldList.size();
+    }
+
+    @Override
+    public int getNewListSize() {
+        return newList.size();
+    }
+
+    @Override
+    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+        return oldList.get(oldItemPosition).getName().equals(newList.get(newItemPosition).getName());
+    }
+
+    @Override
+    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+        return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
     }
 }

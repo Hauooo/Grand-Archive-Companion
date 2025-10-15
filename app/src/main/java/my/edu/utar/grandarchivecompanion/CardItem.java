@@ -27,4 +27,22 @@ public class CardItem {
     public String getText() {
         return text;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof CardItem)) return false;
+        CardItem other = (CardItem) obj;
+        return name.equals(other.name) && imageUrl.equals(other.imageUrl)
+                && type.equals(other.type) && text.equals(other.text);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + imageUrl.hashCode();
+        result = 31 * result + type.hashCode();
+        result = 31 * result + text.hashCode();
+        return result;
+    }
 }

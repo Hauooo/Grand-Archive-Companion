@@ -29,7 +29,6 @@ public class CardsFragment extends Fragment {
     private Gson gson = new Gson();
     private RecyclerView recyclerView;
     private CardAdapter adapter;
-    private List<CardItem> cardList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -38,7 +37,7 @@ public class CardsFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter = new CardAdapter(getContext(), cardList);
+        adapter = new CardAdapter(getContext());
         recyclerView.setAdapter(adapter);
 
         fetchCards();
@@ -47,7 +46,7 @@ public class CardsFragment extends Fragment {
     }
 
     private void fetchCards() {
-        String url = "https://api.gatcg.com/cards/search?prefix=DTR";
+        String url = "https://api.gatcg.com/cards/search";
 
         Request request = new Request.Builder().url(url).build();
 
@@ -94,13 +93,10 @@ public class CardsFragment extends Fragment {
                         newCards.add(new CardItem(name, imageUrl, type, text));
                     }
 
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            cardList.clear();
-                            cardList.addAll(newCards);
-                            adapter.notifyDataSetChanged();
-                        });
-                    }
+                    if (getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        adapter.updateList(newCards);
+                    });
                 }
             }
         });

@@ -1,12 +1,9 @@
 package my.edu.utar.grandarchivecompanion;
 
-import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
+// ... imports
 import android.os.Bundle;
 import android.view.View;
-
 import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -15,12 +12,23 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
-    public boolean isFullScreen = false;
+    // --- CHANGE 1: Improve Encapsulation ---
+    private boolean isFullScreen = false;
 
+    // Getter remains the same
     public boolean isFullScreen() {
         return isFullScreen;
     }
+
     private BottomNavigationView bottomNav;
+
+    // Fragment instances
+    private final Fragment cardsFragment = new CardsFragment();
+    private final Fragment counterFragment = new CounterFragment();
+    private final Fragment rulesFragment = new RulesFragment();
+
+
+    private Fragment activeFragment = counterFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,52 +37,53 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNav = findViewById(R.id.bottom_navigation);
 
-        // Load default fragment (Cards)
+        // Corrected fragment transaction
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                    .replace(R.id.fragment_container, new CounterFragment())
+                    .add(R.id.fragment_container, rulesFragment, "rules").hide(rulesFragment)
+                    // FIX: Hide the cardsFragment itself, not the counterFragment
+                    .add(R.id.fragment_container, cardsFragment, "cards").hide(cardsFragment)
+                    // This line correctly adds and shows the counterFragment by default
+                    .add(R.id.fragment_container, counterFragment, "counter")
                     .commit();
+
+            // This line is correct and syncs the UI
+            bottomNav.setSelectedItemId(R.id.nav_counter);
         }
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selected = null;
-
             if (item.getItemId() == R.id.nav_cards) {
-                selected = new CardsFragment();
-            } else if (item.getItemId() == R.id.nav_counter) {
-                selected = new CounterFragment();
+                selected = cardsFragment;
+            }  // Cards option is temporary removed until it's ready
+            if (item.getItemId() == R.id.nav_counter) {
+                selected = counterFragment;
             } else if (item.getItemId() == R.id.nav_rules) {
-                selected = new RulesFragment();
+                selected = rulesFragment;
             }
 
-            if (selected != null) {
+            if (selected != null && selected != activeFragment) {
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selected)
+                        .hide(activeFragment)
+                        .show(selected)
                         .commit();
+                activeFragment = selected;
             }
-
             return true;
         });
 
-        //Handle back button to exit full screen mode
+        // Handle back button to exit full screen mode (this part remains the same)
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (isFullScreen) {
+                if (isFullScreen()) {
                     exitFullScreenMode();
                 } else {
                     setEnabled(false);
-                    onBackPressed();
+                    MainActivity.super.onBackPressed();
                 }
             }
         });
-    }
-
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
     public void enterFullScreenMode() {

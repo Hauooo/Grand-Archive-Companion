@@ -46,18 +46,22 @@ public class CounterViewModel extends ViewModel {
         } else { // If healing
             currentValue += amount;
         }
+        final int actualChange = currentValue - originalValue;
+
+        // If no change happened, do nothing further and return 0
+        if (actualChange == 0) {
+            return 0;
+        }
 
         lifeData.setValue(currentValue);
 
         // Return the actual difference
 
-
-
         if (isPlayerA){
             if(pendingChangeA == 0){
-                lastLoggedLifeA = currentValue;
+                lastLoggedLifeA = originalValue;
             }
-            pendingChangeA += amount;
+            pendingChangeA += actualChange;
             if (logRunnableA != null) {
                 logHandler.removeCallbacks(logRunnableA);
             }
@@ -65,16 +69,16 @@ public class CounterViewModel extends ViewModel {
             logHandler.postDelayed(logRunnableA, LOG_DELAY_MS);
         }else{
             if(pendingChangeB == 0){
-                lastLoggedLifeB = currentValue;
+                lastLoggedLifeB = originalValue;
             }
-            pendingChangeB += amount;
+            pendingChangeB += actualChange;
             if (logRunnableB != null) {
                 logHandler.removeCallbacks(logRunnableB);
             }
             logRunnableB = () -> commitLogEntry(false);
             logHandler.postDelayed(logRunnableB, LOG_DELAY_MS);
         }
-        return currentValue - originalValue;
+        return actualChange;
     }
 
     public void resetLife() {

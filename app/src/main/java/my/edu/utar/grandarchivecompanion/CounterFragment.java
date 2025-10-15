@@ -34,8 +34,6 @@ import android.widget.ImageButton;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import kotlin.random.Random;
-
 
 public class CounterFragment extends Fragment {
 
@@ -76,7 +74,7 @@ public class CounterFragment extends Fragment {
         //--Initialize the Log Adapter ---
         logAdapter = new LogAdapter();
 
-        ((MainActivity) getActivity()).enterFullScreenMode();
+
 
         TextView counterValueA = view.findViewById(R.id.counter_value_a);
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
@@ -87,6 +85,7 @@ public class CounterFragment extends Fragment {
         FloatingActionButton fabLog = view.findViewById(R.id.fab_log);
         FloatingActionButton fabChangeChampion = view.findViewById(R.id.fab_change_champion);
         FloatingActionButton fabRollDice = view.findViewById(R.id.fab_roll_dice);
+        FloatingActionButton fabFullScreen = view.findViewById(R.id.fab_full_screen);
 
         final boolean[] isFabOpen = {false};
 
@@ -119,7 +118,7 @@ public class CounterFragment extends Fragment {
         // FAB handlers
         fabMain.setOnClickListener(v -> {
             if (!isFabOpen[0]) {
-                FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice};
+                FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice, fabFullScreen};
                 for (int i = 0; i < fabs.length; i++) {
                     showFabInCircle(fabs[i], i, fabs.length, 80f); // radius 120dp
                 }
@@ -130,6 +129,7 @@ public class CounterFragment extends Fragment {
                 hideFab(fabLog);
                 hideFab(fabChangeChampion);
                 hideFab(fabRollDice);
+                hideFab(fabFullScreen);
                 fabMain.animate().rotation(0f).setDuration(300).start();
                 isFabOpen[0] = false;
                 fabMain.setImageResource(R.drawable.list_icon);
@@ -178,6 +178,21 @@ public class CounterFragment extends Fragment {
 
         fabRollDice.setOnClickListener(v -> {
             showDiceRollerPopup(v); // 'v' is the FAB button itself
+            vibrate();
+        });
+
+        fabFullScreen.setOnClickListener(v -> {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if (getActivity() instanceof MainActivity) {
+                MainActivity activity = (MainActivity) getActivity();
+
+                // Toggle full-screen mode
+                if (activity.isFullScreen()) {
+                    activity.exitFullScreenMode();
+                } else {
+                    activity.enterFullScreenMode();
+                }
+            }
             vibrate();
         });
 
@@ -370,29 +385,18 @@ public class CounterFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
 
-        if (getActivity() != null){
-            View navBar = getActivity().findViewById(R.id.bottom_navigation);
-            requireActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            if (navBar != null) {
-                navBar.setVisibility(View.GONE);
-            }
-            View decorView = requireActivity().getWindow().getDecorView();
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            );
-        }
-    }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        ((MainActivity) getActivity()).exitFullScreenMode();
+        // Safely check if the activity exists and if we are actually in full-screen mode
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if (mainActivity.isFullScreen()) {
+                mainActivity.exitFullScreenMode();
+            }
+        }
     }
 
     // Add these two new methods anywhere inside your CounterFragment class
@@ -437,7 +441,7 @@ public class CounterFragment extends Fragment {
                     if (isPlayer1) {
                         requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
                     } else {
-                        requestedChange = (x < view.getWidth() / 2) ? 1 : -1;
+                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
                     }
 
                     // Ask the ViewModel to apply the change and tell us what actually happened.
@@ -451,9 +455,9 @@ public class CounterFragment extends Fragment {
 
                         // Play the correct animation based on the actual change
                         if (actualChange > 0) {
-                            ChampionAnimationHelper.playHeal(backgroundView);
-                        } else {
                             ChampionAnimationHelper.playDamage(backgroundView);
+                        } else {
+                            ChampionAnimationHelper.playHeal(backgroundView);
                         }
 
                         // Provide haptic feedback
