@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private final Fragment rulesFragment = new RulesFragment();
 
 
-    private Fragment activeFragment = counterFragment;
+    private Fragment activeFragment = cardsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,16 +40,20 @@ public class MainActivity extends AppCompatActivity {
         // Corrected fragment transaction
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
+                    // 1. Add rulesFragment, tag it "rules", and hide it.
                     .add(R.id.fragment_container, rulesFragment, "rules").hide(rulesFragment)
-                    // FIX: Hide the cardsFragment itself, not the counterFragment
-                    .add(R.id.fragment_container, cardsFragment, "cards").hide(cardsFragment)
-                    // This line correctly adds and shows the counterFragment by default
-                    .add(R.id.fragment_container, counterFragment, "counter")
+
+                    // 2. Add counterFragment, tag it "counter", and hide it.
+                    .add(R.id.fragment_container, counterFragment, "counter").hide(counterFragment)
+
+                    // 3. Add cardsFragment, tag it "cards". DO NOT hide it, as it's the default.
+                    .add(R.id.fragment_container, cardsFragment, "cards")
                     .commit();
 
-            // This line is correct and syncs the UI
-            bottomNav.setSelectedItemId(R.id.nav_counter);
+            // Sync the BottomNavigationView UI to show the "Cards" icon as selected
+            bottomNav.setSelectedItemId(R.id.nav_cards);
         }
+
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selected = null;
