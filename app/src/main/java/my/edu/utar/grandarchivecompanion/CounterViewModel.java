@@ -36,21 +36,32 @@ public class CounterViewModel extends ViewModel {
     public LiveData<List<LogEntry>> getLogEntries() { return logEntries; }
 
     //Public methods for the Fragment to call in response to user actions
-    public void changeLife(boolean isPlayerA, int amount) {
-        MutableLiveData<Integer> targetLife = isPlayerA ? lifeA : lifeB;
-        Integer currentLife = targetLife.getValue();
-        if (currentLife == null) return;
+    public int changeLife(boolean isPlayerA, int amount) {
+        MutableLiveData<Integer> lifeData = isPlayerA ? lifeA : lifeB;
+        int currentValue = lifeData.getValue() != null ? lifeData.getValue() :0;
+        int originalValue = currentValue; // Store the value before the change
 
-        int newLife = currentLife + amount;
-        if (newLife < 0) newLife = 0; //Prevent negative life totals
-        targetLife.setValue(newLife);
+        if (amount < 0) { // If taking damage
+            currentValue = Math.max(0, currentValue + amount); // Prevents going below 0
+        } else { // If healing
+            currentValue += amount;
+        }
+        final int actualChange = currentValue - originalValue;
 
+        // If no change happened, do nothing further and return 0
+        if (actualChange == 0) {
+            return 0;
+        }
+
+        lifeData.setValue(currentValue);
+
+        // Return the actual difference
 
         if (isPlayerA){
             if(pendingChangeA == 0){
-                lastLoggedLifeA = currentLife;
+                lastLoggedLifeA = originalValue;
             }
-            pendingChangeA += amount;
+            pendingChangeA += actualChange;
             if (logRunnableA != null) {
                 logHandler.removeCallbacks(logRunnableA);
             }
@@ -58,15 +69,16 @@ public class CounterViewModel extends ViewModel {
             logHandler.postDelayed(logRunnableA, LOG_DELAY_MS);
         }else{
             if(pendingChangeB == 0){
-                lastLoggedLifeB = currentLife;
+                lastLoggedLifeB = originalValue;
             }
-            pendingChangeB += amount;
+            pendingChangeB += actualChange;
             if (logRunnableB != null) {
                 logHandler.removeCallbacks(logRunnableB);
             }
             logRunnableB = () -> commitLogEntry(false);
             logHandler.postDelayed(logRunnableB, LOG_DELAY_MS);
         }
+        return actualChange;
     }
 
     public void resetLife() {

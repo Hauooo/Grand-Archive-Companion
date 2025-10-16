@@ -16,8 +16,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,6 +61,9 @@ public class CounterFragment extends Fragment {
     private SoundPool soundPool;
     private int damageSoundId, healSoundId, loseSoundId;
 
+
+
+
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
             "Jin", "Kong Ming", "Lorraine", "Lu Bu", "Mordred", "Rai", "Zander", "Nico",
@@ -91,7 +96,7 @@ public class CounterFragment extends Fragment {
         //--Initialize the Log Adapter ---
         logAdapter = new LogAdapter();
 
-        ((MainActivity) getActivity()).enterFullScreenMode();
+
 
         super.onCreate(savedInstanceState);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
@@ -117,6 +122,7 @@ public class CounterFragment extends Fragment {
         FloatingActionButton fabLog = view.findViewById(R.id.fab_log);
         FloatingActionButton fabChangeChampion = view.findViewById(R.id.fab_change_champion);
         FloatingActionButton fabRollDice = view.findViewById(R.id.fab_roll_dice);
+        FloatingActionButton fabFullScreen = view.findViewById(R.id.fab_full_screen);
 
         final boolean[] isFabOpen = {false};
 
@@ -218,7 +224,13 @@ public class CounterFragment extends Fragment {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float x = event.getX();
                 int change = (x < pViewB.getWidth() / 2) ? -1 : 1;
+        // Setup for Player 1
+        View player1Indicator = view.findViewById(R.id.damage_indicator_layer_a);
+        setupPlayerTouchListener(player1background, player1Indicator, true);
 
+// Setup for Player 2
+        View player2Indicator = view.findViewById(R.id.damage_indicator_layer_b);
+        setupPlayerTouchListener(player2background, player2Indicator, false);
                 viewModel.changeLife(false, change); // Tell the ViewModel what happened
 
                 // Keep the UI feedback in the Fragment
@@ -243,7 +255,7 @@ public class CounterFragment extends Fragment {
         // FAB handlers
         fabMain.setOnClickListener(v -> {
             if (!isFabOpen[0]) {
-                FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice};
+                FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice, fabFullScreen};
                 for (int i = 0; i < fabs.length; i++) {
                     showFabInCircle(fabs[i], i, fabs.length, 80f); // radius 120dp
                 }
@@ -254,6 +266,7 @@ public class CounterFragment extends Fragment {
                 hideFab(fabLog);
                 hideFab(fabChangeChampion);
                 hideFab(fabRollDice);
+                hideFab(fabFullScreen);
                 fabMain.animate().rotation(0f).setDuration(300).start();
                 isFabOpen[0] = false;
                 fabMain.setImageResource(R.drawable.list_icon);
@@ -303,25 +316,23 @@ public class CounterFragment extends Fragment {
         // Optional: dice roll FAB remains commented if not used
 
         fabRollDice.setOnClickListener(v -> {
-            /*
-            BottomSheetDialog diceDialog = new BottomSheetDialog(requireContext());
-            View diceView = getLayoutInflater().inflate(R.layout.dialog_dice_roller, null);
-            diceDialog.setContentView(diceView);
+            showDiceRollerPopup(v); // 'v' is the FAB button itself
+            vibrate();
+        });
 
-            Button rollD6Button = diceView.findViewById(R.id.roll_d6_button);
-            TextView diceResultText = diceView.findViewById(R.id.dice_result_text);
+        fabFullScreen.setOnClickListener(v -> {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if (getActivity() instanceof MainActivity) {
+                MainActivity activity = (MainActivity) getActivity();
 
-            rollD6Button.setOnClickListener(v1 -> {
-                int result = (int) (Math.random() * 6) + 1;
-                diceResultText.setText("D6 Result: " + result);
-                vibrate();
-            });
-
-            diceDialog.show();
-
-             */
-
-            Toast.makeText(getContext(), "Dice Roller feature coming soon!", Toast.LENGTH_SHORT).show();
+                // Toggle full-screen mode
+                if (activity.isFullScreen()) {
+                    activity.exitFullScreenMode();
+                } else {
+                    activity.enterFullScreenMode();
+                }
+            }
+            vibrate();
         });
 
 
@@ -527,28 +538,18 @@ public class CounterFragment extends Fragment {
 
 
 
-    @Override
-    public void onResume() {
-        super.onResume();
 
-        if (getActivity() != null){
-            View navBar = getActivity().findViewById(R.id.bottom_navigation);
-            requireActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            if (navBar != null) {
-                navBar.setVisibility(View.GONE);
-            }
-            View decorView = requireActivity().getWindow().getDecorView();
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            );
-        }
-    }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        // Safely check if the activity exists and if we are actually in full-screen mode
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if (mainActivity.isFullScreen()) {
+                mainActivity.exitFullScreenMode();
+            }
+        }
         ((MainActivity) getActivity()).exitFullScreenMode();
 
     }
@@ -578,6 +579,53 @@ public class CounterFragment extends Fragment {
                 .withEndAction(() -> logPanel.setVisibility(View.INVISIBLE)) // Hide it after animation
                 .start();
         isLogPanelVisible = false;
+    }
+
+    private void setupPlayerTouchListener(final View backgroundView, final View indicatorView, final boolean isPlayer1) {
+        backgroundView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                // We only care about the initial touch down event
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    float x = event.getX();
+                    int requestedChange;
+
+                    // Determine the requested change based on which player it is.
+                    // Player 1 (bottom): Left is -1, Right is +1
+                    // Player 2 (top, mirrored): Left is +1, Right is -1
+                    if (isPlayer1) {
+                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
+                    } else {
+                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
+                    }
+
+                    // Ask the ViewModel to apply the change and tell us what actually happened.
+                    final int actualChange = viewModel.changeLife(isPlayer1, requestedChange);
+
+                    // Only provide feedback if the life total was actually modified.
+                    if (actualChange != 0) {
+                        // Show the floating "+1" or "-1" text
+                        // THIS IS THE CORRECTED LINE:
+                        showChange((FrameLayout) indicatorView, actualChange, isPlayer1);
+
+                        // Play the correct animation based on the actual change
+                        if (actualChange > 0) {
+                            ChampionAnimationHelper.playDamage(backgroundView);
+                        } else {
+                            ChampionAnimationHelper.playHeal(backgroundView);
+                        }
+
+                        // Provide haptic feedback
+                        vibrate();
+                    }
+
+                    // We've handled the event, so return true.
+                    return true;
+                }
+                // Ignore other event types (move, up, etc.)
+                return false;
+            }
+        });
     }
 
     private void addCarouselZoomEffect(RecyclerView recyclerView) {
@@ -625,3 +673,87 @@ public class CounterFragment extends Fragment {
 }
 
 
+
+    // Add these three new methods to CounterFragment.java
+
+    // In CounterFragment.java
+
+    private void showDiceRollerPopup(View anchorView) {
+        LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.popup_dice_roller, null);
+
+        final PopupWindow popupWindow = new PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popupWindow.setElevation(20);
+
+        // --- MODIFIED: Find all the views for BOTH players ---
+        // Player A (Bottom)
+        ImageView diceImageA1 = popupView.findViewById(R.id.dice_image_view_a1);
+        ImageView diceImageA2 = popupView.findViewById(R.id.dice_image_view_a2);
+        TextView resultTextA = popupView.findViewById(R.id.dice_result_text_a);
+        Button roll2D6ButtonA = popupView.findViewById(R.id.roll_2d6_button_a);
+
+
+        // Player B (Top)
+        ImageView diceImageB1 = popupView.findViewById(R.id.dice_image_view_b1);
+        ImageView diceImageB2 = popupView.findViewById(R.id.dice_image_view_b2);
+        TextView resultTextB = popupView.findViewById(R.id.dice_result_text_b);
+        Button roll2D6ButtonB = popupView.findViewById(R.id.roll_2d6_button_b);
+
+
+        // --- MODIFIED: Both sets of buttons call the same logic ---
+        // Pass all the necessary views to the roll methods.
+        View.OnClickListener roll2d6ListenerA = v -> rollTwoDice(diceImageA1, diceImageA2, resultTextA);
+        roll2D6ButtonA.setOnClickListener(roll2d6ListenerA);
+
+
+        View.OnClickListener roll2d6ListenerB = v -> rollTwoDice(diceImageB1, diceImageB2, resultTextB);
+        roll2D6ButtonB.setOnClickListener(roll2d6ListenerB);
+
+
+
+
+
+        popupWindow.showAtLocation(anchorView, Gravity.CENTER, 0, 0);
+    }
+
+    // MODIFIED: Method now takes views for both players
+    private void rollTwoDice(ImageView die1, ImageView die2, TextView resultTextView) {
+        // Make sure both dice are visible before animating
+        die1.setVisibility(View.VISIBLE);
+        die2.setVisibility(View.VISIBLE);
+
+        // Animate the dice for visual effect
+        die1.animate().rotationBy(360f).setDuration(500).start();
+
+        // The end action is attached to only one animation to ensure the logic runs just once.
+        die2.animate()
+                .rotationBy(-360f)
+                .setDuration(500)
+                .withEndAction(() -> {
+                    // Generate random numbers for two dice
+                    java.util.Random random = new java.util.Random();
+                    int result1 = random.nextInt(6) + 1; // Generates a number between 1 and 6
+                    int result2 = random.nextInt(6) + 1; // Generates a number between 1 and 6
+                    int sum = result1 + result2;
+
+                    updateDiceUI(die1, die2, resultTextView, result1, result2, sum);
+                    vibrate(); // Assuming vibrate() is a method in your class
+                }).start();
+    }
+
+    /**
+     * Updates the ImageViews and TextView with the new dice roll results.
+     */
+    private void updateDiceUI(ImageView die1, ImageView die2, TextView resultTextView, int result1, int result2, int sum) {
+        int[] dieFaces = {
+                R.drawable.ic_dice_1, R.drawable.ic_dice_2, R.drawable.ic_dice_3,
+                R.drawable.ic_dice_4, R.drawable.ic_dice_5, R.drawable.ic_dice_6
+        };
+
+        String resultString = String.format("Rolled %d & %d (Total: %d)", result1, result2, sum);
+
+        die1.setImageResource(dieFaces[result1 - 1]);
+        die2.setImageResource(dieFaces[result2 - 1]);
+        resultTextView.setText(resultString);
+    }
+}
