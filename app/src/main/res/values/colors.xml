@@ -4,4 +4,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="player_a_color">#FF33B5E5</color>
     <color name="player_b_color">#FFFF8800</color>
+    <color name="banned_red">#D32F2F</color>
 </resources>

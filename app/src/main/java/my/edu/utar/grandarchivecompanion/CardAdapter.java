@@ -1,90 +1,62 @@
 package my.edu.utar.grandarchivecompanion;
 
-import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 import com.squareup.picasso.Picasso;
-import java.util.ArrayList;
-import java.util.List;
 
-public class CardAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+// Note the change in generic types to handle multiple view types correctly
+public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> {
 
-    private static final int VIEW_TYPE_ITEM = 0;
-    private static final int VIEW_TYPE_LOADING = 1;
+    // 1. Add the interface for click handling
+    private final OnItemClickListener listener;
 
-    private final List<CardItem> cardList = new ArrayList<>();
-
-    public CardAdapter(Context context) {
+    public interface OnItemClickListener {
+        void onItemClick(CardItem card);
     }
+
+    public CardAdapter(@NonNull OnItemClickListener listener) {
+        super(DIFF_CALLBACK);
+        this.listener = listener;
+    }
+
+    // You can re-add these constants if you implement the loading footer
+    // private static final int VIEW_TYPE_ITEM = 0;
+    // private static final int VIEW_TYPE_LOADING = 1;
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == VIEW_TYPE_ITEM) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_item_row, parent, false);
-            return new CardViewHolder(view);
-        } else {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_loading, parent, false);
-            return new LoadingViewHolder(view);
-        }
+        // For now, we only create the main item view holder.
+        // Logic for a loading view holder would be added here if needed.
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_item_row, parent, false);
+        return new CardViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof CardViewHolder) {
-            CardItem card = cardList.get(position);
-            ((CardViewHolder) holder).bind(card);
+        // Use getItem() from ListAdapter to get the object
+        CardItem card = getItem(position);
+        if (card != null && holder instanceof CardViewHolder) {
+            ((CardViewHolder) holder).bind(card, listener);
         }
     }
 
-    @Override
-    public int getItemCount() {
-        return cardList.size();
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        return cardList.get(position) == null ? VIEW_TYPE_LOADING : VIEW_TYPE_ITEM;
-    }
-
-    public void setCards(List<CardItem> newCards) {
-        CardDiffCallback diffCallback = new CardDiffCallback(this.cardList, newCards);
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
-        this.cardList.clear();
-        this.cardList.addAll(newCards);
-        diffResult.dispatchUpdatesTo(this);
-    }
-
-    public void showLoadingFooter() {
-        if (cardList.isEmpty() || cardList.get(cardList.size() - 1) != null) {
-            cardList.add(null);
-            notifyItemInserted(cardList.size() - 1);
-        }
-    }
-
-    public void hideLoadingFooter() {
-        if (!cardList.isEmpty() && cardList.get(cardList.size() - 1) == null) {
-            int lastPosition = cardList.size() - 1;
-            cardList.remove(lastPosition);
-            notifyItemRemoved(lastPosition);
-        }
-    }
-
-    public void addCards(List<CardItem> newCards) {
-        int insertPosition = this.cardList.size();
-        this.cardList.addAll(newCards);
-        notifyItemRangeInserted(insertPosition, newCards.size());
-    }
+    // You no longer need to override getItemCount(). ListAdapter does it for you.
+    // You no longer need setCards(), addCards(), etc. You will use submitList() in your Fragment.
 
     static class CardViewHolder extends RecyclerView.ViewHolder {
         TextView cardName, cardType, cardText;
         ImageView cardImage;
+        private final android.content.res.ColorStateList defaultTextColor;
 
         public CardViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -92,46 +64,54 @@ public class CardAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             cardType = itemView.findViewById(R.id.card_type);
             cardText = itemView.findViewById(R.id.card_text);
             cardImage = itemView.findViewById(R.id.card_image);
+            defaultTextColor = cardName.getHintTextColors();
         }
 
-        void bind(CardItem card) {
+        void bind(final CardItem card, final OnItemClickListener listener) {
             cardName.setText(card.getName());
             cardType.setText(card.getType());
             cardText.setText(card.getText());
             if (card.getImageUrl() != null && !card.getImageUrl().isEmpty()) {
                 Picasso.get().load(card.getImageUrl()).into(cardImage);
             } else {
-                cardImage.setImageResource(android.R.color.darker_gray); // Placeholder
+                cardImage.setImageResource(android.R.color.darker_gray);
             }
+
+            if (card.isBanned()){
+                cardName.setTextColor(itemView.getContext().getResources().getColor(R.color.banned_red));
+            }else{
+                cardName.setTextColor(defaultTextColor);
+            }
+
+            // The click logic now calls the decoupled interface
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(card);
+                }
+            });
+
         }
     }
 
+    // LoadingViewHolder can remain if you re-implement the loading footer logic
     static class LoadingViewHolder extends RecyclerView.ViewHolder {
         public LoadingViewHolder(@NonNull View itemView) {
             super(itemView);
         }
     }
-}
 
-class CardDiffCallback extends DiffUtil.Callback {
-    private final List<CardItem> oldList;
-    private final List<CardItem> newList;
+    // 2. The DiffUtil.ItemCallback is a static constant now
+    private static final DiffUtil.ItemCallback<CardItem> DIFF_CALLBACK =
+            new DiffUtil.ItemCallback<CardItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull CardItem oldItem, @NonNull CardItem newItem) {
+                    // Should be a unique ID, but name is a fallback
+                    return oldItem.getName().equals(newItem.getName());
+                }
 
-    public CardDiffCallback(List<CardItem> oldList, List<CardItem> newList) {
-        this.oldList = oldList;
-        this.newList = newList;
-    }
-
-    @Override public int getOldListSize() { return oldList.size(); }
-    @Override public int getNewListSize() { return newList.size(); }
-
-    @Override
-    public boolean areItemsTheSame(int oldPos, int newPos) {
-        return oldList.get(oldPos).getName().equals(newList.get(newPos).getName());
-    }
-
-    @Override
-    public boolean areContentsTheSame(int oldPos, int newPos) {
-        return oldList.get(oldPos).equals(newList.get(newPos));
-    }
+                @Override
+                public boolean areContentsTheSame(@NonNull CardItem oldItem, @NonNull CardItem newItem) {
+                    return oldItem.equals(newItem);
+                }
+            };
 }

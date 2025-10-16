@@ -3,6 +3,9 @@ package my.edu.utar.grandarchivecompanion;
 // ... imports
 import android.os.Bundle;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsCompat;
@@ -57,17 +60,34 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selected = null;
+            int selectedId = 0;
+            int activeId = 0;
             if (item.getItemId() == R.id.nav_cards) {
                 selected = cardsFragment;
+                selectedId = 1;
             }  // Cards option is temporary removed until it's ready
             if (item.getItemId() == R.id.nav_counter) {
                 selected = counterFragment;
+                selectedId = 2;
             } else if (item.getItemId() == R.id.nav_rules) {
                 selected = rulesFragment;
+                selectedId = 3;
+            }
+
+            if(activeFragment == cardsFragment) {
+                activeId = 1;
+            } else if(activeFragment == counterFragment) {
+                activeId = 2;
+            } else if(activeFragment == rulesFragment) {
+                activeId = 3;
             }
 
             if (selected != null && selected != activeFragment) {
                 getSupportFragmentManager().beginTransaction()
+                        .setCustomAnimations(
+                                selectedId > activeId ? R.anim.slide_in_right : R.anim.slide_in_left,
+                                selectedId > activeId ? R.anim.slide_out_left : R.anim.slide_out_right
+                        )
                         .hide(activeFragment)
                         .show(selected)
                         .commit();
@@ -93,7 +113,11 @@ public class MainActivity extends AppCompatActivity {
     public void enterFullScreenMode() {
         isFullScreen = true;
         if (bottomNav != null) {
-            bottomNav.setVisibility(View.GONE);
+            bottomNav.animate()
+                .translationY(bottomNav.getHeight())
+                .setInterpolator(new AccelerateInterpolator())
+                    .setDuration(300).withEndAction(() -> bottomNav.setVisibility(View.GONE)).start();
+
         }
         WindowInsetsControllerCompat insetsController =
                 new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
@@ -104,6 +128,12 @@ public class MainActivity extends AppCompatActivity {
         isFullScreen = false;
         if (bottomNav != null) {
             bottomNav.setVisibility(View.VISIBLE);
+
+            bottomNav.animate()
+                .translationY(0)
+                    .setInterpolator(new DecelerateInterpolator())
+                .setDuration(300)
+                .start();
         }
         WindowInsetsControllerCompat insetsController =
                 new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
