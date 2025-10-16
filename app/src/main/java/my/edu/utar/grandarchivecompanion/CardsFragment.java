@@ -82,7 +82,7 @@ public class CardsFragment extends Fragment {
                 "Mortal Ambition", "AMB (1st Ed.)", "AMB Starter Deck",
                 "AMB Draft Pack", "Alchemical Revolution (Alter)", "Promo 2025",
                 "Abyssal Heaven", "Abyssal Heaven (1st Ed.)", "Re:Collection - Heaven's Favoured",
-                "Re:Collection - Idyllic Corsage", "Mercurial Heart (Alter)", "Supporter Pack 3",
+                "Re:Collection - Idyll Corsage", "Mercurial Heart (Alter)", "Supporter Pack 3",
                 "Distorted Reflections", "DTR Starter Deck", "Distorted Reflections (1st Ed.)"
         ));
 

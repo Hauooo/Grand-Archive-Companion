@@ -2,6 +2,8 @@ package my.edu.utar.grandarchivecompanion;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -128,7 +130,7 @@ public class CardsViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     String json = response.body().string();
                     JsonArray dataArray = gson.fromJson(json, JsonObject.class).getAsJsonArray("data");
-                    List<CardItem> newCards = parseCards(dataArray);
+                    List<CardItem> newCards = parseCards(dataArray, currentSetPrefix);
 
                     if (newCards.size() < PAGE_SIZE) {
                         canLoadMore = false;
@@ -163,7 +165,7 @@ public class CardsViewModel extends ViewModel {
      */
 
 
-    private List<CardItem> parseCards(JsonArray dataArray) {
+    private List<CardItem> parseCards(JsonArray dataArray, String activeSetPrefix) {
         List<CardItem> newCards = new ArrayList<>();
         if (dataArray == null) return newCards;
 
@@ -171,17 +173,41 @@ public class CardsViewModel extends ViewModel {
             JsonObject cardObj = dataArray.get(i).getAsJsonObject();
             String name = cardObj.has("name") ? cardObj.get("name").getAsString() : "Unknown";
 
-            // --- (Your existing, correct parsing logic for other fields) ---
+            // --- Image URL Parsing ---
             String imageUrl = "";
             if (cardObj.has("editions") && !cardObj.get("editions").isJsonNull() && cardObj.get("editions").isJsonArray()) {
                 JsonArray editions = cardObj.getAsJsonArray("editions");
-                if (editions.size() > 0) {
+
+                // 1. If a specific set is selected, try to find a matching image
+                if (!activeSetPrefix.isEmpty() && editions.size() > 0) {
+                    for (JsonElement editionElement : editions) {
+                        JsonObject edition = editionElement.getAsJsonObject();
+                        if (edition.has("set") && edition.get("set").isJsonObject()) {
+                            JsonObject set = edition.getAsJsonObject("set");
+                            if (set.has("prefix") && !set.get("prefix").isJsonNull()) {
+                                String editionPrefix = set.get("prefix").getAsString();
+                                if (editionPrefix.trim().equalsIgnoreCase(activeSetPrefix.trim())) {
+                                    if (edition.has("image") && !edition.get("image").isJsonNull()) {
+                                        imageUrl = "https://api.gatcg.com" + edition.get("image").getAsString();
+                                        break; // Found it, stop searching
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // --- FIX: ADDED MISSING FALLBACK LOGIC ---
+                // 2. If imageUrl is still empty (no match found or "All Sets" selected), use the first one.
+                if (imageUrl.isEmpty() && editions.size() > 0) {
                     JsonObject firstEdition = editions.get(0).getAsJsonObject();
                     if (firstEdition.has("image") && !firstEdition.get("image").isJsonNull()) {
                         imageUrl = "https://api.gatcg.com" + firstEdition.get("image").getAsString();
                     }
                 }
             }
+
+            // --- (The rest of your parsing logic is correct and remains unchanged) ---
             String type = "Unknown Type";
             if (cardObj.has("types") && !cardObj.get("types").isJsonNull() && cardObj.get("types").isJsonArray()) {
                 JsonArray types = cardObj.getAsJsonArray("types");
@@ -192,19 +218,15 @@ public class CardsViewModel extends ViewModel {
             String text = cardObj.has("effect_raw") && !cardObj.get("effect_raw").isJsonNull() ?
                     cardObj.get("effect_raw").getAsString() : "No effect text.";
 
-            // --- ⭐ CORRECTED RULINGS PARSING LOGIC ---
             StringBuilder rulingsBuilder = new StringBuilder();
             if (cardObj.has("rule") && !cardObj.get("rule").isJsonNull() && cardObj.get("rule").isJsonArray()) {
                 JsonArray rulingsArray = cardObj.getAsJsonArray("rule");
                 for (int j = 0; j < rulingsArray.size(); j++) {
                     JsonObject rulingObj = rulingsArray.get(j).getAsJsonObject();
                     String rulingText = "";
-                    // First, check for the "text" key
                     if (rulingObj.has("text") && !rulingObj.get("text").isJsonNull()) {
                         rulingText = rulingObj.get("text").getAsString();
-                    }
-                    // If "text" isn't found, check for the "description" key
-                    else if (rulingObj.has("description") && !rulingObj.get("description").isJsonNull()) {
+                    } else if (rulingObj.has("description") && !rulingObj.get("description").isJsonNull()) {
                         rulingText = rulingObj.get("description").getAsString();
                     }
 
@@ -215,7 +237,6 @@ public class CardsViewModel extends ViewModel {
             }
             String rulingsText = rulingsBuilder.length() > 0 ? rulingsBuilder.toString().trim() : "No rulings.";
 
-            // --- (Your existing, correct legality parsing logic) ---
             StringBuilder legalityBuilder = new StringBuilder();
             boolean isCardBanned = false;
             if (cardObj.has("legality") && !cardObj.get("legality").isJsonNull() && cardObj.get("legality").isJsonObject()) {
