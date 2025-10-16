@@ -1,4 +1,3 @@
-// java
 package my.edu.utar.grandarchivecompanion;
 
 import android.content.Context;
@@ -57,12 +56,8 @@ public class CounterFragment extends Fragment {
     private boolean hasPlayerBLost = false;
 
     //sound effects
-    // MediaPlayer damageSound, healSound;
     private SoundPool soundPool;
     private int damageSoundId, healSoundId, loseSoundId;
-
-
-
 
     private String[] champions = {
             "Alice", "Allen", "Arisanna", "Ciel", "Diana", "Diana (Astra)", "Diao Chan", "Guo Jia",
@@ -84,30 +79,16 @@ public class CounterFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_counter, container, false);
 
         viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
+        logAdapter = new LogAdapter(); // Initialize adapter
 
-        android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        areSoundsUnlocked = prefs.getBoolean(SOUNDS_UNLOCKED_KEY, false);
-        if (areSoundsUnlocked) {
-            Toast.makeText(getContext(), "Secret Sounds are Active!", Toast.LENGTH_SHORT).show();
-        }
-
-
-
-        //--Initialize the Log Adapter ---
-        logAdapter = new LogAdapter();
-
-
-
-        super.onCreate(savedInstanceState);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build();
-            soundPool = new SoundPool.Builder().setMaxStreams(2).build();
-        } else {
-            soundPool = new SoundPool(2, android.media.AudioManager.STREAM_MUSIC, 0);
-        }
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        soundPool = new SoundPool.Builder()
+                .setAudioAttributes(audioAttributes)
+                .setMaxStreams(3)
+                .build();
 
         damageSoundId = soundPool.load(getContext(), R.raw.damage_sound, 1);
         healSoundId = soundPool.load(getContext(), R.raw.heal_sound, 1);
@@ -117,41 +98,24 @@ public class CounterFragment extends Fragment {
         TextView counterValueB = view.findViewById(R.id.counter_value_b);
         player1background = view.findViewById(R.id.player_a_background);
         player2background = view.findViewById(R.id.player_b_background);
+        logPanel = view.findViewById(R.id.log_panel);
+        logPanelCloseButton = view.findViewById(R.id.log_panel_close_button);
 
-        FloatingActionButton fabMain = view.findViewById(R.id.fab_main);
-        FloatingActionButton fabLog = view.findViewById(R.id.fab_log);
-        FloatingActionButton fabChangeChampion = view.findViewById(R.id.fab_change_champion);
-        FloatingActionButton fabRollDice = view.findViewById(R.id.fab_roll_dice);
-        FloatingActionButton fabFullScreen = view.findViewById(R.id.fab_full_screen);
+        RecyclerView logRecyclerView = view.findViewById(R.id.log_recycler_view);
+        logRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        logRecyclerView.setAdapter(logAdapter);
 
-        final boolean[] isFabOpen = {false};
-
-        // --- OBSERVE the LiveData from ViewModel ---
-        viewModel.getLifeA().observe(getViewLifecycleOwner(), value -> counterValueA.setText(String.valueOf(value)));
-        viewModel.getLifeB().observe(getViewLifecycleOwner(), value -> counterValueB.setText(String.valueOf(value)));
-
-        //Observe logs for RecyclerView (if needed in future)
         viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
-            //Update RecyclerView adapter with new logs
+            if (logAdapter != null) {
+                logAdapter.updateLogs(logs);
+            }
         });
-
-        // --- Update the Observer for log entries ---
-        viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
-            logAdapter.updateLogs(logs); // Update the adapter with new logs
-        });
-
-        // In onCreateView, after initializing the ViewModel
-
 
         viewModel.getLifeA().observe(getViewLifecycleOwner(), life -> {
             counterValueA.setText(String.valueOf(life));
-
-            // --- NEW: Check for the magic number ---
             if (life == 4492) {
                 unlockSounds();
             }
-
-            // Your existing lose sound logic
             if (life >= 25 && !hasPlayerALost) {
                 playLoseSound();
                 hasPlayerALost = true;
@@ -160,107 +124,35 @@ public class CounterFragment extends Fragment {
 
         viewModel.getLifeB().observe(getViewLifecycleOwner(), life -> {
             counterValueB.setText(String.valueOf(life));
-
-            // --- NEW: Check for the magic number ---
             if (life == 4492) {
                 unlockSounds();
             }
-
-            // Your existing lose sound logic
             if (life >= 25 && !hasPlayerBLost) {
                 playLoseSound();
                 hasPlayerBLost = true;
             }
         });
 
-
-        // In onCreateView()
-
-        viewModel.getLifeA().observe(getViewLifecycleOwner(), life -> {
-            counterValueA.setText(String.valueOf(life));
-            // Check if life is 25 or more AND the sound hasn't been played yet
-            if (life >= 25 && !hasPlayerALost) {
-                playLoseSound();
-                hasPlayerALost = true; // Set the flag so it doesn't play again
-            }
-        });
-
-
-        viewModel.getLifeB().observe(getViewLifecycleOwner(), life -> {
-        counterValueB.setText(String.valueOf(life));
-        // Check if life is 25 or more AND the sound hasn't been played yet
-        if (life >= 25 && !hasPlayerBLost) {
-            playLoseSound();
-            hasPlayerBLost = true; // Set the flag so it doesn't play again
-        }
-    });
-
-
-
-
-        player1background.setOnTouchListener((pViewA, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float x = event.getX();
-                int change = (x < pViewA.getWidth() / 2) ? -1 : 1;
-
-                viewModel.changeLife(true, change); // Tell the ViewModel what happened
-
-                // Keep the UI feedback in the Fragment
-                showChange(view.findViewById(R.id.damage_indicator_layer_a), change, true);
-                if (change > 0) {
-                    ChampionAnimationHelper.playDamage(player1background);
-                    playDamageSound(); // This will now be gated
-                } else {
-                    ChampionAnimationHelper.playHeal(player1background);
-                    playHealSound(); // This will now be gated
-                }
-                vibrate();
-                return true;
-            }
-            return false;
-        });
-
-        player2background.setOnTouchListener((pViewB, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float x = event.getX();
-                int change = (x < pViewB.getWidth() / 2) ? -1 : 1;
-        // Setup for Player 1
         View player1Indicator = view.findViewById(R.id.damage_indicator_layer_a);
         setupPlayerTouchListener(player1background, player1Indicator, true);
 
-// Setup for Player 2
         View player2Indicator = view.findViewById(R.id.damage_indicator_layer_b);
         setupPlayerTouchListener(player2background, player2Indicator, false);
-                viewModel.changeLife(false, change); // Tell the ViewModel what happened
 
-                // Keep the UI feedback in the Fragment
-                showChange(view.findViewById(R.id.damage_indicator_layer_b), change, false);
-                if (change > 0) {
-                    ChampionAnimationHelper.playDamage(player2background);
-                    playDamageSound(); // This will now be gated
-                } else {
-                    ChampionAnimationHelper.playHeal(player2background);
-                    playHealSound(); // This will now be gated
-                }
-                vibrate();
-                return true;
-            }
-            return false;
-        });
+        FloatingActionButton fabMain = view.findViewById(R.id.fab_main);
+        FloatingActionButton fabLog = view.findViewById(R.id.fab_log);
+        FloatingActionButton fabChangeChampion = view.findViewById(R.id.fab_change_champion);
+        FloatingActionButton fabRollDice = view.findViewById(R.id.fab_roll_dice);
+        FloatingActionButton fabFullScreen = view.findViewById(R.id.fab_full_screen);
 
-        //--- Find the new panel and its close button ---
-        logPanel = view.findViewById(R.id.log_panel);
-        logPanelCloseButton = view.findViewById(R.id.log_panel_close_button);
-
-        // FAB handlers
+        final boolean[] isFabOpen = {false};
         fabMain.setOnClickListener(v -> {
             if (!isFabOpen[0]) {
                 FloatingActionButton[] fabs = {fabLog, fabChangeChampion, fabRollDice, fabFullScreen};
                 for (int i = 0; i < fabs.length; i++) {
-                    showFabInCircle(fabs[i], i, fabs.length, 80f); // radius 120dp
+                    showFabInCircle(fabs[i], i, fabs.length, 80f);
                 }
                 fabMain.animate().rotation(135f).setDuration(300).start();
-                isFabOpen[0] = true;
                 fabMain.setImageResource(R.drawable.ic_refresh);
             } else {
                 hideFab(fabLog);
@@ -268,73 +160,80 @@ public class CounterFragment extends Fragment {
                 hideFab(fabRollDice);
                 hideFab(fabFullScreen);
                 fabMain.animate().rotation(0f).setDuration(300).start();
-                isFabOpen[0] = false;
                 fabMain.setImageResource(R.drawable.list_icon);
             }
-
+            isFabOpen[0] = !isFabOpen[0];
             vibrate();
         });
-
 
         fabLog.setOnClickListener(v -> {
             showLogPanel();
             vibrate();
         });
 
-        logPanelCloseButton.setOnClickListener(v -> {
-            hideLogPanel();
-            vibrate();
-        });
-
-        logAdapter = new LogAdapter(); // Make sure logAdapter is a member variable
-        RecyclerView logRecyclerView = view.findViewById(R.id.log_recycler_view);
-        logRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        logRecyclerView.setAdapter(logAdapter);
-
-        // This observer will now automatically update the recycler view inside the panel
-        viewModel.getLogEntries().observe(getViewLifecycleOwner(), logs -> {
-            if (logAdapter != null) {
-                logAdapter.updateLogs(logs);
-            }
-        });
-
-        fabMain.setOnLongClickListener(fabMainLongView -> {
-            viewModel.resetLife(); // Just tell the ViewModel to reset
-            hasPlayerALost = false; // Reset the flags
+        fabMain.setOnLongClickListener(v -> {
+            viewModel.resetLife();
+            hasPlayerALost = false;
             hasPlayerBLost = false;
             vibrate();
             Toast.makeText(getContext(), "Game Reset!", Toast.LENGTH_SHORT).show();
             return true;
         });
 
-        fabChangeChampion.setOnClickListener(fabChangeView -> {
+        fabChangeChampion.setOnClickListener(v -> {
             showChampionPicker(1);
             showChampionPicker(2);
             vibrate();
         });
 
-        // Optional: dice roll FAB remains commented if not used
-
         fabRollDice.setOnClickListener(v -> {
-            showDiceRollerPopup(v); // 'v' is the FAB button itself
+            showDiceRollerPopup(v);
             vibrate();
         });
 
         fabFullScreen.setOnClickListener(v -> {
-            MainActivity mainActivity = (MainActivity) getActivity();
             if (getActivity() instanceof MainActivity) {
                 MainActivity activity = (MainActivity) getActivity();
+                if (activity.isFullScreen()) {
+                    activity.exitFullScreenMode();
+                } else {
+                    activity.enterFullScreenMode();
+                }
+                vibrate();
+            }
+        });
 
-                // Toggle full-screen mode
+        fabLog.setOnClickListener(v -> showLogPanel());
+        logPanelCloseButton.setOnClickListener(v -> hideLogPanel());
+        fabMain.setOnLongClickListener(v -> {
+            viewModel.resetLife();
+            hasPlayerALost = false;
+            hasPlayerBLost = false;
+            vibrate();
+            Toast.makeText(getContext(), "Game Reset!", Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        fabChangeChampion.setOnClickListener(v -> {
+            showChampionPicker(1);
+            showChampionPicker(2);
+        });
+        fabRollDice.setOnClickListener(v -> showDiceRollerPopup(v));
+        fabFullScreen.setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                MainActivity activity = (MainActivity) getActivity();
                 if (activity.isFullScreen()) {
                     activity.exitFullScreenMode();
                 } else {
                     activity.enterFullScreenMode();
                 }
             }
-            vibrate();
         });
 
+        android.content.SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        areSoundsUnlocked = prefs.getBoolean(SOUNDS_UNLOCKED_KEY, false);
+        if (areSoundsUnlocked) {
+            Toast.makeText(getContext(), "Secret Sounds are Active!", Toast.LENGTH_SHORT).show();
+        }
 
         return view;
     }
@@ -423,39 +322,32 @@ public class CounterFragment extends Fragment {
                 .start();
     }
 
-    private void vibrate(){
-        Vibrator vibrator = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            VibratorManager vibratorManager = requireContext().getSystemService(VibratorManager.class);
-            if (vibratorManager != null) {
-                vibrator = vibratorManager.getDefaultVibrator();
-            }
+    private void vibrate() {
+        Vibrator vibrator;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager manager = (VibratorManager) requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+            vibrator = manager.getDefaultVibrator();
         } else {
-            vibrator = (Vibrator) requireContext().getSystemService(requireContext().VIBRATOR_SERVICE);
+            vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
         }
 
         if (vibrator != null && vibrator.hasVibrator()) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(50, 50));
-            } else {
-                //deprecated in API 26
-                vibrator.vibrate(50);
-            }
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
         }
     }
 
     private void playDamageSound(){
-        if (!areSoundsUnlocked) return; // The "gate"
+        if (!areSoundsUnlocked) return;
         soundPool.play(damageSoundId, 1, 1, 0, 0, 1);
     }
 
     private void playHealSound(){
-        if (!areSoundsUnlocked) return; // The "gate"
+        if (!areSoundsUnlocked) return;
         soundPool.play(healSoundId, 1, 1, 0, 0, 1);
     }
 
     private void playLoseSound(){
-        if (!areSoundsUnlocked) return; // The "gate"
+        if (!areSoundsUnlocked) return;
         soundPool.play(loseSoundId, 1, 1, 0, 0, 1f);
     }
 
@@ -466,23 +358,18 @@ public class CounterFragment extends Fragment {
 
     private void showChampionPicker(int player) {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
-        // 1. Inflate the new carousel layout
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_champion_carousel, null);
         dialog.setContentView(dialogView);
 
         RecyclerView recyclerView = dialogView.findViewById(R.id.champion_carousel_recycler_view);
 
-        // 2. Set the LayoutManager to be HORIZONTAL
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         recyclerView.setLayoutManager(layoutManager);
 
-        // 3. Attach the magic SnapHelper to the RecyclerView. This makes it snap to the center.
         LinearSnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerView);
-        // In showChampionPicker, after snapHelper.attachToRecyclerView(recyclerView);
         addCarouselZoomEffect(recyclerView);
 
-        // 4. Set your updated adapter
         ChampionAdapter adapter = new ChampionAdapter(champions, championImages, position -> {
             if (player == 1) {
                 player1background.setImageResource(championImages[position]);
@@ -493,7 +380,6 @@ public class CounterFragment extends Fragment {
         });
         recyclerView.setAdapter(adapter);
 
-        // For Player 2, we still rotate the entire dialog view.
         if (player == 2) {
             dialogView.setRotation(180);
         }
@@ -503,10 +389,7 @@ public class CounterFragment extends Fragment {
 
     private void showFabInCircle(FloatingActionButton fab, int index, int total, float radiusDp) {
         float radiusPx = radiusDp * getResources().getDisplayMetrics().density;
-
-        // Calculate angle in radians (360° divided equally)
         double angle = Math.toRadians((360.0 / total) * index);
-
         float offsetX = (float) (Math.cos(angle) * radiusPx);
         float offsetY = (float) (Math.sin(angle) * radiusPx);
 
@@ -534,35 +417,27 @@ public class CounterFragment extends Fragment {
                 .start();
     }
 
-
-
-
-
-
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Safely check if the activity exists and if we are actually in full-screen mode
         if (getActivity() instanceof MainActivity) {
             MainActivity mainActivity = (MainActivity) getActivity();
             if (mainActivity.isFullScreen()) {
                 mainActivity.exitFullScreenMode();
             }
         }
-        ((MainActivity) getActivity()).exitFullScreenMode();
-
+        if (soundPool != null) {
+            soundPool.release();
+            soundPool = null;
+        }
     }
-
-    // Add these two new methods anywhere inside your CounterFragment class
 
     private void showLogPanel() {
         if (isLogPanelVisible) return;
 
-        // Make it visible and animate it in from the right
         logPanel.setVisibility(View.VISIBLE);
         logPanel.animate()
-                .translationX(0) // Move to its original position
+                .translationX(0)
                 .setDuration(300)
                 .setInterpolator(new OvershootInterpolator(0.8f))
                 .start();
@@ -572,59 +447,42 @@ public class CounterFragment extends Fragment {
     private void hideLogPanel() {
         if (!isLogPanelVisible) return;
 
-        // Animate it out to the right
         logPanel.animate()
-                .translationX(logPanel.getWidth() + 50) // Move it off-screen
+                .translationX(logPanel.getWidth() + 50)
                 .setDuration(250)
-                .withEndAction(() -> logPanel.setVisibility(View.INVISIBLE)) // Hide it after animation
+                .withEndAction(() -> logPanel.setVisibility(View.INVISIBLE))
                 .start();
         isLogPanelVisible = false;
     }
 
-    private void setupPlayerTouchListener(final View backgroundView, final View indicatorView, final boolean isPlayer1) {
-        backgroundView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                // We only care about the initial touch down event
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    float x = event.getX();
-                    int requestedChange;
+    private void setupPlayerTouchListener(final View backgroundView, final View indicatorView, final boolean isPlayerA) {
+        backgroundView.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                float x = event.getX();
+                int requestedChange;
 
-                    // Determine the requested change based on which player it is.
-                    // Player 1 (bottom): Left is -1, Right is +1
-                    // Player 2 (top, mirrored): Left is +1, Right is -1
-                    if (isPlayer1) {
-                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
-                    } else {
-                        requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
-                    }
-
-                    // Ask the ViewModel to apply the change and tell us what actually happened.
-                    final int actualChange = viewModel.changeLife(isPlayer1, requestedChange);
-
-                    // Only provide feedback if the life total was actually modified.
-                    if (actualChange != 0) {
-                        // Show the floating "+1" or "-1" text
-                        // THIS IS THE CORRECTED LINE:
-                        showChange((FrameLayout) indicatorView, actualChange, isPlayer1);
-
-                        // Play the correct animation based on the actual change
-                        if (actualChange > 0) {
-                            ChampionAnimationHelper.playDamage(backgroundView);
-                        } else {
-                            ChampionAnimationHelper.playHeal(backgroundView);
-                        }
-
-                        // Provide haptic feedback
-                        vibrate();
-                    }
-
-                    // We've handled the event, so return true.
-                    return true;
+                if (isPlayerA) {
+                    requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
+                } else {
+                    requestedChange = (x < view.getWidth() / 2) ? 1 : -1;
                 }
-                // Ignore other event types (move, up, etc.)
-                return false;
+
+                final int actualChange = viewModel.changeLife(isPlayerA, requestedChange);
+
+                if (actualChange != 0) {
+                    showChange((FrameLayout) indicatorView, actualChange, isPlayerA);
+                    if (actualChange > 0) {
+                        ChampionAnimationHelper.playDamage(backgroundView);
+                        playDamageSound();
+                    } else {
+                        ChampionAnimationHelper.playHeal(backgroundView);
+                        playHealSound();
+                    }
+                    vibrate();
+                }
+                return true;
             }
+            return false;
         });
     }
 
@@ -640,10 +498,7 @@ public class CounterFragment extends Fragment {
                     float childMidPoint = (child.getLeft() + child.getRight()) / 2f;
                     float distanceFromCenter = Math.abs(midPoint - childMidPoint);
 
-                    // Scale the item based on its distance from the center.
-                    // The closer to the center, the larger it is (closer to 1.0f).
-                    // The further away, the smaller it is (closer to 0.8f).
-                    float scale = 1f - (distanceFromCenter / midPoint) * 0.2f; // 0.2f is the amount to shrink
+                    float scale = 1f - (distanceFromCenter / midPoint) * 0.2f;
                     child.setScaleX(Math.max(0.8f, scale));
                     child.setScaleY(Math.max(0.8f, scale));
                 }
@@ -651,32 +506,20 @@ public class CounterFragment extends Fragment {
         });
     }
 
-    // Add this new method to CounterFragment.java
-
     private void unlockSounds() {
-        // Check if sounds are already unlocked to prevent this from running multiple times.
         if (areSoundsUnlocked) return;
 
         areSoundsUnlocked = true;
 
-        // Provide immediate feedback to the user!
         Toast.makeText(getContext(), "SECRET SOUNDS UNLOCKED!", Toast.LENGTH_LONG).show();
-        playHealSound(); // Play a confirmation sound
+        playHealSound();
         vibrate();
 
-        // --- NEW: Save the unlocked state permanently ---
         android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         android.content.SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(SOUNDS_UNLOCKED_KEY, true);
         editor.apply();
     }
-}
-
-
-
-    // Add these three new methods to CounterFragment.java
-
-    // In CounterFragment.java
 
     private void showDiceRollerPopup(View anchorView) {
         LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -685,65 +528,45 @@ public class CounterFragment extends Fragment {
         final PopupWindow popupWindow = new PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popupWindow.setElevation(20);
 
-        // --- MODIFIED: Find all the views for BOTH players ---
-        // Player A (Bottom)
         ImageView diceImageA1 = popupView.findViewById(R.id.dice_image_view_a1);
         ImageView diceImageA2 = popupView.findViewById(R.id.dice_image_view_a2);
         TextView resultTextA = popupView.findViewById(R.id.dice_result_text_a);
         Button roll2D6ButtonA = popupView.findViewById(R.id.roll_2d6_button_a);
 
-
-        // Player B (Top)
         ImageView diceImageB1 = popupView.findViewById(R.id.dice_image_view_b1);
         ImageView diceImageB2 = popupView.findViewById(R.id.dice_image_view_b2);
         TextView resultTextB = popupView.findViewById(R.id.dice_result_text_b);
         Button roll2D6ButtonB = popupView.findViewById(R.id.roll_2d6_button_b);
 
-
-        // --- MODIFIED: Both sets of buttons call the same logic ---
-        // Pass all the necessary views to the roll methods.
         View.OnClickListener roll2d6ListenerA = v -> rollTwoDice(diceImageA1, diceImageA2, resultTextA);
         roll2D6ButtonA.setOnClickListener(roll2d6ListenerA);
-
 
         View.OnClickListener roll2d6ListenerB = v -> rollTwoDice(diceImageB1, diceImageB2, resultTextB);
         roll2D6ButtonB.setOnClickListener(roll2d6ListenerB);
 
-
-
-
-
         popupWindow.showAtLocation(anchorView, Gravity.CENTER, 0, 0);
     }
 
-    // MODIFIED: Method now takes views for both players
     private void rollTwoDice(ImageView die1, ImageView die2, TextView resultTextView) {
-        // Make sure both dice are visible before animating
         die1.setVisibility(View.VISIBLE);
         die2.setVisibility(View.VISIBLE);
 
-        // Animate the dice for visual effect
         die1.animate().rotationBy(360f).setDuration(500).start();
 
-        // The end action is attached to only one animation to ensure the logic runs just once.
         die2.animate()
                 .rotationBy(-360f)
                 .setDuration(500)
                 .withEndAction(() -> {
-                    // Generate random numbers for two dice
                     java.util.Random random = new java.util.Random();
-                    int result1 = random.nextInt(6) + 1; // Generates a number between 1 and 6
-                    int result2 = random.nextInt(6) + 1; // Generates a number between 1 and 6
+                    int result1 = random.nextInt(6) + 1;
+                    int result2 = random.nextInt(6) + 1;
                     int sum = result1 + result2;
 
                     updateDiceUI(die1, die2, resultTextView, result1, result2, sum);
-                    vibrate(); // Assuming vibrate() is a method in your class
+                    vibrate();
                 }).start();
     }
 
-    /**
-     * Updates the ImageViews and TextView with the new dice roll results.
-     */
     private void updateDiceUI(ImageView die1, ImageView die2, TextView resultTextView, int result1, int result2, int sum) {
         int[] dieFaces = {
                 R.drawable.ic_dice_1, R.drawable.ic_dice_2, R.drawable.ic_dice_3,
