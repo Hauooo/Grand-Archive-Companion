@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MICKEY MOUSE</string>
+    <string name="app_name">Grand Archive Companion</string>
 
     <string name="card_image_description">Image of the selected card</string>
     <string name="rulings">Rulings</string>

@@ -1,0 +1,13 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Sound">
+
+        <SwitchPreferenceCompat
+            app:key="sounds_enabled"
+            app:title="Enable Secret Sounds"
+            app:summary="Enable or disable the secret unlocked sound effects."
+            app:defaultValue="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
