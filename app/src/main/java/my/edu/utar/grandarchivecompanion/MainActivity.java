@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private final Fragment cardsFragment = new CardsFragment();
     private final Fragment counterFragment = new CounterFragment();
     private final Fragment rulesFragment = new RulesFragment();
+    //private final Fragment settingsFragment = new SettingsFragment();
 
 
     private Fragment activeFragment = cardsFragment;
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // 2. Add counterFragment, tag it "counter", and hide it.
                     .add(R.id.fragment_container, counterFragment, "counter").hide(counterFragment)
+                    //.add(R.id.fragment_container, settingsFragment, "settings").hide(settingsFragment)
 
                     // 3. Add cardsFragment, tag it "cards". DO NOT hide it, as it's the default.
                     .add(R.id.fragment_container, cardsFragment, "cards")
@@ -72,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.nav_rules) {
                 selected = rulesFragment;
                 selectedId = 3;
+//            } else if (item.getItemId() == R.id.nav_settings) {
+//                selected = settingsFragment;
+//                selectedId = 4;
             }
 
             if(activeFragment == cardsFragment) {
@@ -80,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
                 activeId = 2;
             } else if(activeFragment == rulesFragment) {
                 activeId = 3;
+//            } else if(activeFragment == settingsFragment) {
+//                activeId = 4;
             }
 
             if (selected != null && selected != activeFragment) {

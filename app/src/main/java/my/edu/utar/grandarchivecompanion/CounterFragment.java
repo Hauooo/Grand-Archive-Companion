@@ -464,7 +464,7 @@ public class CounterFragment extends Fragment {
                 if (isPlayerA) {
                     requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
                 } else {
-                    requestedChange = (x < view.getWidth() / 2) ? 1 : -1;
+                    requestedChange = (x < view.getWidth() / 2) ? -1 : 1;
                 }
 
                 final int actualChange = viewModel.changeLife(isPlayerA, requestedChange);
