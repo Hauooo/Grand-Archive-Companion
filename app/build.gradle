@@ -63,6 +63,8 @@ dependencies {
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
+    implementation 'com.google.android.material:material:1.5.0'
+
     // --- REMOVED DUPLICATE AND CONFLICTING LINES ---
     // implementation 'androidx.appcompat:appcompat:1.7.0' // Removed: Duplicate of libs.appcompat
     // implementation 'com.google.android.material:material:1.12.0' // Removed: Duplicate

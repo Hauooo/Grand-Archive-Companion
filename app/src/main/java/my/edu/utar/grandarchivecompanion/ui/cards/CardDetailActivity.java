@@ -18,14 +18,9 @@ public class CardDetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // --- FIX 2: Use DataBindingUtil to set the content view ---
-        // This correctly inflates the layout and sets the content view in one step
-        // for layouts wrapped with the <layout> tag.
+
         binding = DataBindingUtil.setContentView(this, R.layout.activity_card_detail);
 
-        // Your original inflate/setContentView lines are no longer needed:
-        // binding = ActivityCardDetailBinding.inflate(getLayoutInflater());
-        // setContentView(binding.getRoot()); // This was the line causing the error
 
         // Enable the back arrow in the toolbar
         if (getSupportActionBar() != null) {
