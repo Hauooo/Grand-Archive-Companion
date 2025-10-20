@@ -3,41 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_cards">
+    app:startDestination="@id/navigation_home">
 
+    <!-- The starting point is now the HomeFragment -->
     <fragment
-        android:id="@+id/navigation_cards"
-        android:name="my.edu.utar.grandarchivecompanion.ui.cards.CardsFragment"
-        android:label="Cards"
-        tools:layout="@layout/fragment_cards" >
-
-        <action
-            android:id="@+id/action_cards_to_detail"
-            app:destination="@id/cardDetailFragment"
-
-            app:enterAnim="@anim/slide_in_right"
-            app:exitAnim="@anim/slide_out_left"
-            app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right" />
+        android:id="@+id/navigation_home"
+        android:name="my.edu.utar.grandarchivecompanion.ui.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" >
 
     </fragment>
 
-    <fragment
-        android:id="@+id/cardDetailFragment"
-        android:name="my.edu.utar.grandarchivecompanion.ui.cards.CardDetailFragment"
-        android:label="Card Details"
-        tools:layout="@layout/fragment_card_detail" />
 
-    <fragment
-        android:id="@+id/navigation_counter"
-        android:name="my.edu.utar.grandarchivecompanion.ui.counter.CounterFragment"
-        android:label="Counter"
-        tools:layout="@layout/fragment_counter" />
 
-    <fragment
-        android:id="@+id/navigation_rules"
-        android:name="my.edu.utar.grandarchivecompanion.ui.rules.RulesFragment"
-        android:label="Rules"
-        tools:layout="@layout/fragment_rules" />
 
 </navigation>

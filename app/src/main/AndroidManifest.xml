@@ -15,9 +15,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GrandArchiveCompanion"
         tools:targetApi="31">
+        <!-- In AndroidManifest.xml, inside the <application> tag -->
         <activity
-            android:name=".ui.cards.CardDetailFragment"
-            android:exported="false" />
+            android:name=".ui.cards.CardDetailActivity"
+            android:exported="false"
+            android:label="Card Details"
+            android:parentActivityName=".MainActivity" />
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection"

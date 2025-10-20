@@ -1,5 +1,6 @@
 package my.edu.utar.grandarchivecompanion.ui.cards;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -56,9 +58,9 @@ public class CardsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        // --- BUG FIX & REFINEMENT 1: Initialize ViewModel first ---
-        viewModel = new ViewModelProvider(this).get(CardsViewModel.class);
+        // Scope the ViewModel to the parent fragment (HomeFragment).
+        // This ViewModel will be shared by all fragments in the ViewPager.
+        viewModel = new ViewModelProvider(requireParentFragment()).get(CardsViewModel.class);
 
         // Setup the adapter with a refined click listener
         setupAdapter();
@@ -74,22 +76,23 @@ public class CardsFragment extends Fragment {
     }
 
     private void setupAdapter() {
+        // In CardsFragment.java, inside onViewCreated() or a setup method...
         adapter = new CardAdapter(card -> {
-            // --- REFINEMENT 3: Improve Navigation Logic ---
             try {
-                // Create a bundle to pass the selected card object
-                Bundle bundle = new Bundle();
-                bundle.putParcelable("selectedCard", card);
+                // Create an Intent to start the new Activity
+                Intent intent = new Intent(requireContext(), CardDetailActivity.class);
 
-                // Find NavController and navigate with the bundle
-                NavController navController = NavHostFragment.findNavController(this);
-                navController.navigate(R.id.action_cards_to_detail, bundle);
+                // Put the selected card object as an "extra"
+                intent.putExtra("selectedCard", card);
+
+                // Start the activity
+                startActivity(intent);
 
             } catch (Exception e) {
-                // It's better to log the error or show a message
-                Toast.makeText(getContext(), "Could not open card details.", Toast.LENGTH_SHORT).show();
+                // Handle error
             }
         });
+
     }
 
     private void setupSetSpinner() {
