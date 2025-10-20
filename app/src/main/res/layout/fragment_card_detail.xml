@@ -5,13 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    tools:context=".CardDetailActivity">
+    tools:context=".ui.cards.CardDetailFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
 
+        <!-- This ImageView should be first as it's at the top of the screen -->
         <ImageView
             android:id="@+id/card_image_detail"
             android:layout_width="0dp"
@@ -24,6 +25,7 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@android:color/holo_blue_light" />
 
+        <!-- 1. DEFINE the TextView first. -->
         <TextView
             android:id="@+id/card_name_detail"
             android:layout_width="0dp"
@@ -36,6 +38,7 @@
             app:layout_constraintTop_toBottomOf="@id/card_image_detail"
             tools:text="Silvie, Slime Sovereign" />
 
+        <!-- 2. NOW you can reference card_name_detail because it's defined above. -->
         <View
             android:id="@+id/divider"
             android:layout_width="0dp"
@@ -46,6 +49,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/card_name_detail" />
 
+        <!-- The rest of the views are in the correct order -->
         <TextView
             android:id="@+id/card_type_detail"
             android:layout_width="0dp"

@@ -1,4 +1,4 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.rules;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,6 +11,8 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import my.edu.utar.grandarchivecompanion.R;
 
 public class RulesFragment extends Fragment {
 

@@ -1,4 +1,4 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.counter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,6 +10,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
+
+import my.edu.utar.grandarchivecompanion.R;
 
 public class LogAdapter extends RecyclerView.Adapter<LogAdapter.LogViewHolder> {
 

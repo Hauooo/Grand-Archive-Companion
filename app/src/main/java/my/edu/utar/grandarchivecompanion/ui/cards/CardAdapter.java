@@ -1,17 +1,17 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.cards;
 
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 import com.squareup.picasso.Picasso;
+
+import my.edu.utar.grandarchivecompanion.R;
 
 // Note the change in generic types to handle multiple view types correctly
 public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> {

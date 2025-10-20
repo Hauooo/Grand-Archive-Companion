@@ -1,4 +1,4 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.counter;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class CounterViewModel extends ViewModel {
     //Use LiveData to hold the counter state
     private final MutableLiveData<Integer> lifeA = new MutableLiveData<>(0);

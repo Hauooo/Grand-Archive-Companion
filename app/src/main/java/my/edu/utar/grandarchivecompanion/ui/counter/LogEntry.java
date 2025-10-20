@@ -1,4 +1,4 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.counter;
 
 public class LogEntry {
     private final String logText;

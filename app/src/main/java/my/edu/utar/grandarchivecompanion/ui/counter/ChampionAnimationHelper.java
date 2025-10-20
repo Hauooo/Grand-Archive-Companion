@@ -1,4 +1,4 @@
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.counter;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;

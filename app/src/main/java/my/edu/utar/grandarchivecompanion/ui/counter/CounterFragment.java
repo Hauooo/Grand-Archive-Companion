@@ -1,5 +1,5 @@
 // java
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.counter;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -33,6 +33,9 @@ import android.widget.ImageButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import my.edu.utar.grandarchivecompanion.MainActivity;
+import my.edu.utar.grandarchivecompanion.R;
 
 
 public class CounterFragment extends Fragment {

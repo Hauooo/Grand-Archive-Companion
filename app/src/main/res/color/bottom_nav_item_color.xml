@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Color when the navigation item IS selected (checked) -->
+    <!-- You can use your theme's primary color or any custom color -->
+    <item android:color="?attr/colorPrimary" android:state_checked="true" />
+
+    <!-- Default color for all other states (i.e., when the item is NOT selected) -->
+    <item android:color="?android:attr/textColorSecondary" />
+
+</selector>

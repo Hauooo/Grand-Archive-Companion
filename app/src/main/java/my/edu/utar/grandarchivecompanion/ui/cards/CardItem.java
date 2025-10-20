@@ -1,6 +1,6 @@
 // In CardItem.java
 
-package my.edu.utar.grandarchivecompanion;
+package my.edu.utar.grandarchivecompanion.ui.cards;
 
 import android.os.Parcel;
 import android.os.Parcelable;

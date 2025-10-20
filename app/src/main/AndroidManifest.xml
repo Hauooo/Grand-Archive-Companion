@@ -16,7 +16,7 @@
         android:theme="@style/Theme.GrandArchiveCompanion"
         tools:targetApi="31">
         <activity
-            android:name=".CardDetailActivity"
+            android:name=".ui.cards.CardDetailFragment"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
