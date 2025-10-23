@@ -169,9 +169,9 @@ public class CardsViewModel extends ViewModel {
         public static String parseEffectText(String rawText) {
             if (rawText == null || rawText.isEmpty()) return "No effect text.";
             String parsed = rawText;
-            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?POWER\\]?(?!\\w)", "<img src=\"ic_sword\"/>");
-            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?LIFE\\]?(?!\\w)", "<img src=\"ic_heart\"/>");
-            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?REST\\]?(?!\\w)", "<img src=\"ic_rest\"/>");
+            parsed = parsed.replaceAll("(?<!\\w)\\[?POWER\\]?(?!\\w)", "<img src=\"ic_sword\"/>");
+            parsed = parsed.replaceAll("(?<!\\w)\\[?LIFE\\]?(?!\\w)", "<img src=\"ic_heart\"/>");
+            parsed = parsed.replaceAll("(?<!\\w)\\[?REST\\]?(?!\\w)", "<img src=\"ic_rest\"/>");
             return parsed;
         }
     }
