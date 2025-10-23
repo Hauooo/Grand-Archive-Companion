@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import my.edu.utar.grandarchivecompanion.R;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -160,9 +163,18 @@ public class CardsViewModel extends ViewModel {
         });
     }
 
-    /**
-     * Safely parses a JSON array into a list of CardItem objects.
-     */
+    public static final class EffectTextParser {
+        private EffectTextParser() {}
+
+        public static String parseEffectText(String rawText) {
+            if (rawText == null || rawText.isEmpty()) return "No effect text.";
+            String parsed = rawText;
+            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?POWER\\]?(?!\\w)", "<img src=\"ic_sword\"/>");
+            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?LIFE\\]?(?!\\w)", "<img src=\"ic_heart\"/>");
+            parsed = parsed.replaceAll("(?i)(?<!\\w)\\[?REST\\]?(?!\\w)", "<img src=\"ic_rest\"/>");
+            return parsed;
+        }
+    }
 
 
     private List<CardItem> parseCards(JsonArray dataArray, String activeSetPrefix) {
@@ -215,8 +227,12 @@ public class CardsViewModel extends ViewModel {
                     type = types.get(0).getAsString();
                 }
             }
-            String text = cardObj.has("effect_raw") && !cardObj.get("effect_raw").isJsonNull() ?
-                    cardObj.get("effect_raw").getAsString() : "No effect text.";
+            // Replace the existing effect text handling inside `parseCards(...)` with this:
+            String text = cardObj.has("effect_raw") && !cardObj.get("effect_raw").isJsonNull()
+                    ? EffectTextParser.parseEffectText(cardObj.get("effect_raw").getAsString())
+                    : "No effect text.";
+
+
 
             StringBuilder rulingsBuilder = new StringBuilder();
             if (cardObj.has("rule") && !cardObj.get("rule").isJsonNull() && cardObj.get("rule").isJsonArray()) {

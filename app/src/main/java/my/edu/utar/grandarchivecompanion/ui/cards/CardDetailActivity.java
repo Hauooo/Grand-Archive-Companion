@@ -9,10 +9,17 @@ import androidx.databinding.DataBindingUtil; // --- FIX 1: Import DataBindingUti
 import com.squareup.picasso.Picasso;
 import my.edu.utar.grandarchivecompanion.R;
 import my.edu.utar.grandarchivecompanion.databinding.ActivityCardDetailBinding;
+import io.noties.markwon.Markwon; // --- FIX 2: Import Markwon ---
+import io.noties.markwon.html.HtmlPlugin;
+import io.noties.markwon.image.ImagesPlugin;
+import io.noties.markwon.image.glide.GlideImagesPlugin;
+
+
 
 public class CardDetailActivity extends AppCompatActivity {
 
     private ActivityCardDetailBinding binding;
+    private Markwon markwon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,7 +28,11 @@ public class CardDetailActivity extends AppCompatActivity {
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_card_detail);
 
-
+        markwon = Markwon.builder(this)
+                .usePlugin(HtmlPlugin.create())
+                .usePlugin(ImagesPlugin.create())
+                .usePlugin(GlideImagesPlugin.create(this)) // <-- ADDED a parenthesis here
+                .build();
         // Enable the back arrow in the toolbar
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -34,7 +45,7 @@ public class CardDetailActivity extends AppCompatActivity {
             // Populate the views (this part of your code is correct)
             binding.cardNameDetail.setText(card.getName());
             binding.cardTypeDetail.setText(card.getType());
-            binding.cardTextDetail.setText(card.getText());
+            markwon.setMarkdown(binding.cardTextDetail, card.getEffectRaw());
             binding.cardRulingsDetail.setText(card.getRulings());
             binding.cardLegalityDetail.setText(card.getLegality());
 

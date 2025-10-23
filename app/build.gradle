@@ -35,40 +35,41 @@ android {
 }
 
 dependencies {
-    // --- Use Version Catalog Aliases (the libs.* method) ---
+    // --- From Version Catalog (libs.versions.toml) ---
     implementation libs.appcompat
-    implementation libs.material
+    implementation libs.material // This should be the ONLY material dependency
     implementation libs.activity
     implementation libs.constraintlayout
+    implementation libs.navigation.fragment // Keep the version catalog alias
+    implementation libs.navigation.ui
+    implementation libs.androidx.navigation.fragment// Keep the version catalog alias
 
     // --- Core & Lifecycle Dependencies ---
-    // You have these defined as hardcoded strings, which is fine if they aren't in your TOML file.
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation libs.navigation.fragment
-    implementation libs.navigation.ui
     def lifecycle_version = "2.7.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
     implementation 'androidx.recyclerview:recyclerview:1.3.1'
+    implementation 'androidx.preference:preference:1.2.1'
+    // Note: core-ktx is often brought in by other libs like activity, but explicitly adding is fine.
+    implementation 'androidx.core:core-ktx:1.13.1'
 
     // --- Networking and Utility Dependencies ---
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.squareup.picasso:picasso:2.8'
+    implementation 'com.github.bumptech.glide:glide:4.15.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
+
+    // --- Markwon Dependencies (Corrected and De-duplicated) ---
     implementation 'io.noties.markwon:core:4.6.2'
-    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'io.noties.markwon:html:4.6.2'
+    implementation 'io.noties.markwon:image:4.6.2'
+    implementation "io.noties.markwon:image-glide:4.6.2"
 
     // --- Testing Dependencies ---
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
-    implementation 'com.google.android.material:material:1.5.0'
 
-    // --- REMOVED DUPLICATE AND CONFLICTING LINES ---
-    // implementation 'androidx.appcompat:appcompat:1.7.0' // Removed: Duplicate of libs.appcompat
-    // implementation 'com.google.android.material:material:1.12.0' // Removed: Duplicate
-    // implementation 'com.google.android.material:material:1.13.0' // Removed: Conflict with libs.material
-    // implementation 'androidx.constraintlayout:constraintlayout:2.2.0' // Removed: Duplicate of libs.constraintlayout
-    // implementation 'com.github.chrisbane:PhotoView:library:2.3.0' // Removed: Typo and duplicate of libs.photoview
 }

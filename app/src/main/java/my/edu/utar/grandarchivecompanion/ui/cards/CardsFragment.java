@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,8 +17,12 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import my.edu.utar.grandarchivecompanion.ui.cards.LoadingFootAdapter;
+
+import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +35,9 @@ public class CardsFragment extends Fragment {
     private FragmentCardsBinding binding;
     private CardAdapter adapter;
     private CardsViewModel viewModel;
+    private ImageView loadingGif;
+    private LoadingFootAdapter footerAdapter;
+    private ConcatAdapter concatAdapter;
 
     // --- Suggestion 2: Encapsulate set data into a model class ---
     private static class SetInfo {
@@ -61,13 +69,12 @@ public class CardsFragment extends Fragment {
         // Scope the ViewModel to the parent fragment (HomeFragment).
         // This ViewModel will be shared by all fragments in the ViewPager.
         viewModel = new ViewModelProvider(requireParentFragment()).get(CardsViewModel.class);
-
+        loadingGif = view.findViewById(R.id.loadingGif);
         // Setup the adapter with a refined click listener
         setupAdapter();
 
         // Setup RecyclerView
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.recyclerView.setAdapter(adapter);
 
         // Now it's safe to setup listeners and observers
         setupSetSpinner();
@@ -92,6 +99,10 @@ public class CardsFragment extends Fragment {
                 // Handle error
             }
         });
+
+        footerAdapter = new LoadingFootAdapter();
+        concatAdapter = new ConcatAdapter(adapter, footerAdapter);
+        binding.recyclerView.setAdapter(concatAdapter);
 
     }
 
@@ -209,15 +220,28 @@ public class CardsFragment extends Fragment {
         });
 
         viewModel.isLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-            if (isLoading) {
-                binding.recyclerView.setVisibility(View.GONE);
-                binding.errorContainer.setVisibility(View.GONE);
+            if (isLoading != null && isLoading) {
+                loadingGif.setVisibility(View.VISIBLE);
+                // Load the gif resource (add `res/drawable/loading.gif`)
+                Glide.with(requireContext())
+                        .asGif()
+                        .load(R.drawable.loading)
+                        .into(loadingGif);
+            } else {
+                loadingGif.setVisibility(View.GONE);
             }
         });
 
         viewModel.isLoadingMore().observe(getViewLifecycleOwner(), isLoadingMore -> {
-            // Logic to show a loading footer can be added here
+            if (Boolean.TRUE.equals(isLoadingMore)) {
+                if (!concatAdapter.getAdapters().contains(footerAdapter)) {
+                    concatAdapter.addAdapter(footerAdapter);
+                }
+            } else {
+                if (concatAdapter.getAdapters().contains(footerAdapter)) {
+                    concatAdapter.removeAdapter(footerAdapter);
+                }
+            }
         });
 
         viewModel.isError().observe(getViewLifecycleOwner(), isError -> {
@@ -227,6 +251,8 @@ public class CardsFragment extends Fragment {
             }
         });
     }
+
+
 
     @Override
     public void onDestroyView() {

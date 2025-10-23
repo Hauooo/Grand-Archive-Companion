@@ -46,5 +46,13 @@
         <item name="itemPaddingTop">6dp</item>
         <item name="itemPaddingBottom">10dp</item>
     </style>
+    <style name="ShapeAppearance.App.CornerSize14dp" parent="">
+
+        <item name="cornerSize">14dp</item>
+    </style>
+    <style name="ShapeAppearance.App.CornerSize7dp" parent="">
+
+        <item name="cornerSize">7dp</item>
+    </style>
 
 </resources>

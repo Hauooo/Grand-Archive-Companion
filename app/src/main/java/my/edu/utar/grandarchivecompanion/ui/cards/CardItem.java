@@ -11,16 +11,16 @@ public class CardItem implements Parcelable {
     private final String name;
     private final String imageUrl;
     private final String type;
-    private final String text;
+    private final String effectRaw;
     private final String rulings;   // New field
     private final String legality;  // New field
     private final boolean isBanned;
 
-    public CardItem(String name, String imageUrl, String type, String text, String rulings, String legality, boolean isBanned) {
+    public CardItem(String name, String imageUrl, String type, String effectRaw, String rulings, String legality, boolean isBanned) {
         this.name = name;
         this.imageUrl = imageUrl;
         this.type = type;
-        this.text = text;
+        this.effectRaw = effectRaw;
         this.rulings = rulings;   // New field
         this.legality = legality; // New field
         this.isBanned = isBanned;
@@ -30,7 +30,7 @@ public class CardItem implements Parcelable {
         name = in.readString();
         imageUrl = in.readString();
         type = in.readString();
-        text = in.readString();
+        effectRaw = in.readString();
         rulings = in.readString();  // New field
         legality = in.readString(); // New field
         isBanned = in.readByte() != 0;
@@ -41,7 +41,7 @@ public class CardItem implements Parcelable {
         dest.writeString(name);
         dest.writeString(imageUrl);
         dest.writeString(type);
-        dest.writeString(text);
+        dest.writeString(effectRaw);
         dest.writeString(rulings);  // New field
         dest.writeString(legality); // New field
         dest.writeByte((byte) (isBanned ? 1 : 0));
@@ -73,7 +73,7 @@ public class CardItem implements Parcelable {
     public String getName() { return name; }
     public String getImageUrl() { return imageUrl; }
     public String getType() { return type; }
-    public String getText() { return text; }
+    public String getEffectRaw() { return effectRaw; }
 
     @Override
     public boolean equals(Object o) {
@@ -83,7 +83,7 @@ public class CardItem implements Parcelable {
         return Objects.equals(name, cardItem.name) &&
                 Objects.equals(imageUrl, cardItem.imageUrl) &&
                 Objects.equals(type, cardItem.type) &&
-                Objects.equals(text, cardItem.text) &&
+                Objects.equals(effectRaw, cardItem.effectRaw) &&
                 Objects.equals(rulings, cardItem.rulings) &&   // New field
                 Objects.equals(legality, cardItem.legality) && // New field
                 Objects.equals(isBanned, cardItem.isBanned); // New field
@@ -91,6 +91,6 @@ public class CardItem implements Parcelable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, imageUrl, type, text, rulings, legality, isBanned); // New fields
+        return Objects.hash(name, imageUrl, type, effectRaw, rulings, legality, isBanned); // New fields
     }
 }
