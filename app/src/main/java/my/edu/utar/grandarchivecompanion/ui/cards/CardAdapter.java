@@ -34,7 +34,7 @@ public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_item_row, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_card_grid, parent, false);
         return new CardViewHolder(view);
     }
 
@@ -45,7 +45,7 @@ public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> 
     }
 
     static class CardViewHolder extends RecyclerView.ViewHolder {
-        TextView cardName, cardType, cardText;
+        TextView cardName;
         ImageView cardImage;
         private final android.content.res.ColorStateList defaultTextColor;
         private final Markwon markwon;
@@ -53,8 +53,6 @@ public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> 
         public CardViewHolder(@NonNull View itemView) {
             super(itemView);
             cardName = itemView.findViewById(R.id.card_name);
-            cardType = itemView.findViewById(R.id.card_type);
-            cardText = itemView.findViewById(R.id.card_effect_text);
             cardImage = itemView.findViewById(R.id.card_image);
             defaultTextColor = cardName.getHintTextColors();
 
@@ -67,9 +65,6 @@ public class CardAdapter extends ListAdapter<CardItem, RecyclerView.ViewHolder> 
 
         void bind(final CardItem card, final OnItemClickListener listener) {
             cardName.setText(card.getName());
-            cardType.setText(card.getType());
-            // Use Markwon to render effect text (supports HTML and images via plugins)
-            markwon.setMarkdown(cardText, card.getEffectRaw());
 
             if (card.getImageUrl() != null && !card.getImageUrl().isEmpty()) {
                 Picasso.get().load(card.getImageUrl()).into(cardImage);

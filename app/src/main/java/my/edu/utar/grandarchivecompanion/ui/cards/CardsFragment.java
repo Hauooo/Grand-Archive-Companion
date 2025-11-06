@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -18,7 +19,7 @@ import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.ConcatAdapter;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import my.edu.utar.grandarchivecompanion.ui.cards.LoadingFootAdapter;
 
@@ -73,8 +74,30 @@ public class CardsFragment extends Fragment {
         // Setup the adapter with a refined click listener
         setupAdapter();
 
-        // Setup RecyclerView
-        binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        //Define your span count
+        final int spanCount = 2;
+
+        // Create the layout manager
+        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), spanCount);
+
+        // Set the SpanSizeLookup to adjust span for footer
+        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                boolean isFooterAdded = concatAdapter.getAdapters().contains(footerAdapter);
+
+                int totalItemCount = concatAdapter.getItemCount();
+
+                if (isFooterAdded && position == totalItemCount - 1) {
+                    return spanCount; // Footer takes full span
+                } else {
+                    return 1; // Regular items take 1 span
+                }
+            }
+        });
+
+        binding.recyclerView.setLayoutManager(layoutManager);
+        binding.recyclerView.setAdapter(concatAdapter);
 
         // Now it's safe to setup listeners and observers
         setupSetSpinner();
@@ -119,7 +142,7 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Event Packs", "EP"));
         sets.add(new SetInfo("Proxia's Vault", "PRXY"));
         sets.add(new SetInfo("Dawn of Ashes (Alter)", "DOA Alter"));
-        sets.add(new SetInfo("DOA Starter Deck", "DOA SD"));
+        sets.add(new SetInfo("DOA Starter Deck", "DOASD"));
         sets.add(new SetInfo("Supporter Pack 1", "SP1"));
         sets.add(new SetInfo("Promotional 2023", "P23 Promo"));
         sets.add(new SetInfo("Demo 2023", "DEMO23"));
@@ -128,7 +151,7 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Promotional 2024", "P24"));
         sets.add(new SetInfo("Alchemical Revolution", "ALC"));
         sets.add(new SetInfo("Alchemical Revolution (1st Ed.)", "ALC 1st"));
-        sets.add(new SetInfo("ALC Starter Deck", "ALC SD"));
+        sets.add(new SetInfo("ALC Starter Deck", "ALCSD"));
         sets.add(new SetInfo("SquareLive Collaboration", "SLC"));
         sets.add(new SetInfo("Mercurial Heart", "MRC"));
         sets.add(new SetInfo("Mercurial Heart (1st Ed.)", "MRC 1st"));
@@ -137,7 +160,7 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Supporter Pack 2", "SP2"));
         sets.add(new SetInfo("Mortal Ambition", "AMB"));
         sets.add(new SetInfo("Mortal Ambition (1st Ed.)", "AMB 1st"));
-        sets.add(new SetInfo("Mortal Ambition Starter Deck", "AMB SD"));
+        sets.add(new SetInfo("Mortal Ambition Starter Deck", "AMBSD"));
         sets.add(new SetInfo("Mortal Ambition Draft Pack", "AMB DP"));
         sets.add(new SetInfo("Alchemical Revolution (Alter)", "ALC Alter"));
         sets.add(new SetInfo("Promotional 2025", "P25"));
@@ -150,23 +173,23 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Supporter Pack 3", "SP3"));
         sets.add(new SetInfo("Distorted Reflections", "DTR"));
         sets.add(new SetInfo("Distorted Reflections (1st Ed.)", "DTR 1st"));
-        sets.add(new SetInfo("DTR Starter Deck", "DTR SD"));
+        sets.add(new SetInfo("DTR Starter Deck", "DTRSD"));
+        sets.add(new SetInfo("Phantom Monarchs", "PTM"));
+        sets.add(new SetInfo("Phantom Monarchs (1st Ed.)", "PTM 1st"));
+        sets.add(new SetInfo("Re:Collection - Brilliant Veestige", "ReC-BRV"));
         // ... Add all other sets in the same way
 
 
-        ArrayAdapter<SetInfo> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, sets);
+        ArrayAdapter<SetInfo> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.my_dropdown_item, sets);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.setSpinner.setAdapter(spinnerAdapter);
+        // Get the AutoCompleteTextView from the layout
+        AutoCompleteTextView autoComplete = binding.setSpinnerAutoComplete;
+        autoComplete.setAdapter(spinnerAdapter);
 
-        binding.setSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                SetInfo selectedSet = (SetInfo) parent.getItemAtPosition(position);
-                viewModel.setSetPrefix(selectedSet.prefix);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) { /* Do nothing */ }
+        // Set the on-click listener
+        autoComplete.setOnItemClickListener((parent, view, position, id) -> {
+            SetInfo selectedSet = (SetInfo) parent.getItemAtPosition(position);
+            viewModel.setSetPrefix(selectedSet.prefix);
         });
     }
 
@@ -191,7 +214,7 @@ public class CardsFragment extends Fragment {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                LinearLayoutManager layoutManager = (LinearLayoutManager) binding.recyclerView.getLayoutManager();
+                GridLayoutManager layoutManager = (GridLayoutManager) binding.recyclerView.getLayoutManager();
                 if (layoutManager == null) return;
 
                 int visibleItemCount = layoutManager.getChildCount();

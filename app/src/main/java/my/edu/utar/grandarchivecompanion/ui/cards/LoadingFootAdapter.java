@@ -12,7 +12,8 @@ import com.bumptech.glide.Glide;
 
 import my.edu.utar.grandarchivecompanion.R;
 
-public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.ViewHolder>{
+public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.ViewHolder> {
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -22,12 +23,9 @@ public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Glide.with(holder.itemView.getContext())
-                .asGif()
-                .load(R.drawable.loading)
-                .into(holder.loadingGif);
+        // This is now empty!
+        // The work is done in the ViewHolder's constructor.
     }
-
 
     @Override
     public int getItemCount() {
@@ -35,10 +33,19 @@ public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        final ImageView loadingGif;
-        ViewHolder (@NonNull View itemView) {
+        // No longer needs to be 'final' if not accessed from outside
+        // final ImageView loadingGif;
+
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
-            loadingGif = itemView.findViewById(R.id.loading);
+            // Find the ImageView
+            ImageView loadingGif = itemView.findViewById(R.id.loading);
+
+            // Load the GIF here, during creation
+            Glide.with(itemView.getContext())
+                    .asGif()
+                    .load(R.drawable.loading)
+                    .into(loadingGif);
         }
     }
 }
