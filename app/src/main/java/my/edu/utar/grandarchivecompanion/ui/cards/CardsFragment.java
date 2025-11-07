@@ -174,9 +174,11 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Distorted Reflections", "DTR"));
         sets.add(new SetInfo("Distorted Reflections (1st Ed.)", "DTR 1st"));
         sets.add(new SetInfo("DTR Starter Deck", "DTRSD"));
-        sets.add(new SetInfo("Phantom Monarchs", "PTM"));
-        sets.add(new SetInfo("Phantom Monarchs (1st Ed.)", "PTM 1st"));
-        sets.add(new SetInfo("Re:Collection - Brilliant Veestige", "ReC-BRV"));
+        //sets.add(new SetInfo("Phantom Monarchs", "PTM"));
+        //sets.add(new SetInfo("Phantom Monarchs (1st Ed.)", "PTM 1st"));
+        //sets.add(new SetInfo("Re:Collection - Brilliant Veestige", "ReC-BRV"));
+        //sets.add(new SetInfo("Rodiant Origins", "RDO"));
+
         // ... Add all other sets in the same way
 
 
