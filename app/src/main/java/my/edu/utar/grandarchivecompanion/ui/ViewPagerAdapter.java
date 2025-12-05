@@ -1,8 +1,7 @@
-package my.edu.utar.grandarchivecompanion.ui; // Or your actual ui package
+package my.edu.utar.grandarchivecompanion.ui;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import my.edu.utar.grandarchivecompanion.ui.cards.CardsFragment;
@@ -25,14 +24,14 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
             case 1:
                 return new CounterFragment();
             case 2:
-                return new RulesFragment(); // This will contain your WebView
+                return new RulesFragment();
             default:
-                return new CardsFragment(); // Default case
+                return new CardsFragment(); // Default fallback
         }
     }
 
     @Override
     public int getItemCount() {
-        return 3; // The number of tabs you have
+        return 3; // Cards, Counter, Rules
     }
 }

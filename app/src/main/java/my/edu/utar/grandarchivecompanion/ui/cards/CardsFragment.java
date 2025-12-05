@@ -3,8 +3,8 @@ package my.edu.utar.grandarchivecompanion.ui.cards;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.View;import android.view.ViewGroup;
-import android.widget.AdapterView;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
@@ -15,13 +15,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavBackStackEntry;
-import androidx.navigation.NavController;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import my.edu.utar.grandarchivecompanion.ui.cards.LoadingFootAdapter;
 
 import com.bumptech.glide.Glide;
 
@@ -40,7 +36,7 @@ public class CardsFragment extends Fragment {
     private LoadingFootAdapter footerAdapter;
     private ConcatAdapter concatAdapter;
 
-    // --- Suggestion 2: Encapsulate set data into a model class ---
+    // --- Model for Set Spinner ---
     private static class SetInfo {
         final String name;
         final String prefix;
@@ -53,7 +49,6 @@ public class CardsFragment extends Fragment {
         @NonNull
         @Override
         public String toString() {
-            // This is what the spinner will display
             return name;
         }
     }
@@ -67,70 +62,62 @@ public class CardsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Scope the ViewModel to the parent fragment (HomeFragment).
-        // This ViewModel will be shared by all fragments in the ViewPager.
+
+        // Scope the ViewModel to the parent fragment (e.g., HomeFragment) to share state across tabs.
+        // If this fragment is NOT inside a parent fragment (like a ViewPager), change this to requireActivity().
         viewModel = new ViewModelProvider(requireParentFragment()).get(CardsViewModel.class);
+
         loadingGif = view.findViewById(R.id.loadingGif);
-        // Setup the adapter with a refined click listener
+
+        // Setup the adapter and Recycler View
         setupAdapter();
+        setupRecyclerView();
 
-        //Define your span count
-        final int spanCount = 2;
-
-        // Create the layout manager
-        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), spanCount);
-
-        // Set the SpanSizeLookup to adjust span for footer
-        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override
-            public int getSpanSize(int position) {
-                boolean isFooterAdded = concatAdapter.getAdapters().contains(footerAdapter);
-
-                int totalItemCount = concatAdapter.getItemCount();
-
-                if (isFooterAdded && position == totalItemCount - 1) {
-                    return spanCount; // Footer takes full span
-                } else {
-                    return 1; // Regular items take 1 span
-                }
-            }
-        });
-
-        binding.recyclerView.setLayoutManager(layoutManager);
-        binding.recyclerView.setAdapter(concatAdapter);
-
-        // Now it's safe to setup listeners and observers
+        // Setup UI components and Observables
         setupSetSpinner();
         setupListeners();
         setupObservers();
     }
 
     private void setupAdapter() {
-        // In CardsFragment.java, inside onViewCreated() or a setup method...
         adapter = new CardAdapter(card -> {
             try {
-                // Create an Intent to start the new Activity
                 Intent intent = new Intent(requireContext(), CardDetailActivity.class);
-
-                // Put the selected card object as an "extra"
                 intent.putExtra("selectedCard", card);
-
-                // Start the activity
                 startActivity(intent);
-
             } catch (Exception e) {
-                // Handle error
+                Toast.makeText(requireContext(), "Error opening card detail: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
 
         footerAdapter = new LoadingFootAdapter();
-        concatAdapter = new ConcatAdapter(adapter, footerAdapter);
-        binding.recyclerView.setAdapter(concatAdapter);
+        concatAdapter = new ConcatAdapter(adapter);
+    }
 
+    private void setupRecyclerView() {
+        final int spanCount = 2;
+        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), spanCount);
+
+        // Footer takes full width, cards take 1 span
+        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                boolean isFooterAdded = concatAdapter.getAdapters().contains(footerAdapter);
+                int totalItemCount = concatAdapter.getItemCount();
+
+                if (isFooterAdded && position == totalItemCount - 1) {
+                    return spanCount; // Footer takes full width
+                } else {
+                    return 1; // Cards take 1 column
+                }
+            }
+        });
+
+        binding.recyclerView.setLayoutManager(layoutManager);
+        binding.recyclerView.setAdapter(concatAdapter);
     }
 
     private void setupSetSpinner() {
-        // --- Suggestion 2: Use the SetInfo class ---
         final List<SetInfo> sets = new ArrayList<>();
         sets.add(new SetInfo("All Sets", ""));
         sets.add(new SetInfo("Demo 2022", "DEMO22"));
@@ -164,7 +151,6 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("Mortal Ambition Draft Pack", "AMB DP"));
         sets.add(new SetInfo("Alchemical Revolution (Alter)", "ALC Alter"));
         sets.add(new SetInfo("Promotional 2025", "P25"));
-        sets.add(new SetInfo("Promo 2024", "P24"));
         sets.add(new SetInfo("Abyssal Heaven", "HVN"));
         sets.add(new SetInfo("Abyssal Heaven (1st Ed.)", "HVN 1st"));
         sets.add(new SetInfo("Re:Collection - Heaven's Favoured", "ReC-HVF"));
@@ -176,17 +162,17 @@ public class CardsFragment extends Fragment {
         sets.add(new SetInfo("DTR Starter Deck", "DTRSD"));
         sets.add(new SetInfo("Phantom Monarchs", "PTM"));
         sets.add(new SetInfo("Phantom Monarchs (1st Ed.)", "PTM 1st"));
-        sets.add(new SetInfo("Re:Collection - Brilliant Veestige", "ReC-BRV"));
-        // ... Add all other sets in the same way
+        sets.add(new SetInfo("Re:Collection - Brilliant Vestige", "ReC-BRV"));
+        sets.add(new SetInfo("Phantom Monarchs Event Pack", "PTMEVP"));
+        sets.add(new SetInfo("Phantom Monarchs: Looking Glass Sights", "PTMLGS"));
 
 
-        ArrayAdapter<SetInfo> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.my_dropdown_item, sets);
+        ArrayAdapter<SetInfo> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, sets);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Get the AutoCompleteTextView from the layout
+
         AutoCompleteTextView autoComplete = binding.setSpinnerAutoComplete;
         autoComplete.setAdapter(spinnerAdapter);
 
-        // Set the on-click listener
         autoComplete.setOnItemClickListener((parent, view, position, id) -> {
             SetInfo selectedSet = (SetInfo) parent.getItemAtPosition(position);
             viewModel.setSetPrefix(selectedSet.prefix);
@@ -223,10 +209,10 @@ public class CardsFragment extends Fragment {
 
                 Boolean isLoadingMore = viewModel.isLoadingMore().getValue();
                 if (isLoadingMore != null && isLoadingMore) {
-                    return; // Already loading
+                    return;
                 }
 
-                // Load more when near the end of the list
+                // Load more when we reach the end
                 if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount && firstVisibleItemPosition >= 0) {
                     viewModel.loadMoreCards();
                 }
@@ -243,10 +229,10 @@ public class CardsFragment extends Fragment {
         });
 
         viewModel.isLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            if (isLoading != null && isLoading) {
+            if (Boolean.TRUE.equals(isLoading)) {
                 loadingGif.setVisibility(View.VISIBLE);
-                // Load the gif resource (add `res/drawable/loading.gif`)
-                Glide.with(requireContext())
+                // Use 'this' (Fragment) for lifecycle management instead of requireContext()
+                Glide.with(this)
                         .asGif()
                         .load(R.drawable.loading)
                         .into(loadingGif);
@@ -256,12 +242,13 @@ public class CardsFragment extends Fragment {
         });
 
         viewModel.isLoadingMore().observe(getViewLifecycleOwner(), isLoadingMore -> {
+            boolean footerIsPresent = concatAdapter.getAdapters().contains(footerAdapter);
             if (Boolean.TRUE.equals(isLoadingMore)) {
-                if (!concatAdapter.getAdapters().contains(footerAdapter)) {
+                if (!footerIsPresent) {
                     concatAdapter.addAdapter(footerAdapter);
                 }
             } else {
-                if (concatAdapter.getAdapters().contains(footerAdapter)) {
+                if (footerIsPresent) {
                     concatAdapter.removeAdapter(footerAdapter);
                 }
             }
@@ -275,11 +262,9 @@ public class CardsFragment extends Fragment {
         });
     }
 
-
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null; // This is correct for preventing memory leaks
+        binding = null;
     }
 }

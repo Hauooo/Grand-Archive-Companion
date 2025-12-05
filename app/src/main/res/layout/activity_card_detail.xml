@@ -17,8 +17,7 @@
             android:padding="16dp"
             tools:context=".ui.cards.CardDetailActivity">
 
-            <!-- All your existing views go inside here without any changes. -->
-
+            <!-- Card Image -->
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/card_image_detail"
                 android:layout_width="0dp"
@@ -29,9 +28,23 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:src="@android:color/holo_blue_light"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.App.CornerSize14dp"/>
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.App.CornerSize14dp"
+                tools:src="@android:color/holo_blue_light" />
 
+            <!-- Flip Button -->
+            <Button
+                android:id="@+id/flip_to_other_orientation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Flip"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/card_image_detail"
+                tools:visibility="visible" />
+
+            <!-- Card Name -->
             <TextView
                 android:id="@+id/card_name_detail"
                 android:layout_width="0dp"
@@ -41,9 +54,10 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/card_image_detail"
+                app:layout_constraintTop_toBottomOf="@id/flip_to_other_orientation"
                 tools:text="Silvie, Slime Sovereign" />
 
+            <!-- Divider -->
             <View
                 android:id="@+id/divider"
                 android:layout_width="0dp"
@@ -54,6 +68,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/card_name_detail" />
 
+            <!-- Card Type -->
             <TextView
                 android:id="@+id/card_type_detail"
                 android:layout_width="0dp"
@@ -66,6 +81,7 @@
                 app:layout_constraintTop_toBottomOf="@id/divider"
                 tools:text="Champion, Slime" />
 
+            <!-- Card Effect Text -->
             <TextView
                 android:id="@+id/card_text_detail"
                 android:layout_width="0dp"
@@ -78,6 +94,7 @@
                 app:layout_constraintTop_toBottomOf="@id/card_type_detail"
                 tools:text="On Enter: Create two Slime tokens.\nActivate — Pay (2): Slimes you control get +1/+1 until end of turn. This effect lasts until the end of turn." />
 
+            <!-- Rulings Title -->
             <TextView
                 android:id="@+id/card_rulings_title"
                 android:layout_width="0dp"
@@ -90,6 +107,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/card_text_detail" />
 
+            <!-- Rulings Detail -->
             <TextView
                 android:id="@+id/card_rulings_detail"
                 android:layout_width="0dp"
@@ -101,8 +119,9 @@
                 app:layout_constraintTop_toBottomOf="@id/card_rulings_title"
                 tools:text="• If you control no Slimes, this effect does nothing." />
 
+            <!-- Legality Detail -->
             <TextView
-                android:id="@+id/card_legality_title"
+                android:id="@+id/card_legality_detail"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -112,18 +131,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/card_rulings_detail" />
-
-            <TextView
-                android:id="@+id/card_legality_detail"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:paddingBottom="16dp"
-                android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/card_legality_title"
-                tools:text="Standard: Legal\nConstructed: Legal" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

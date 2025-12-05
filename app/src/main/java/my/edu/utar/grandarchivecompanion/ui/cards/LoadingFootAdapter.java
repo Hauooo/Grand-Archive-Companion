@@ -23,8 +23,8 @@ public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        // This is now empty!
-        // The work is done in the ViewHolder's constructor.
+        // Trigger the load when the view is bound (handles recycling correctly)
+        holder.bind();
     }
 
     @Override
@@ -33,15 +33,15 @@ public class LoadingFootAdapter extends RecyclerView.Adapter<LoadingFootAdapter.
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        // No longer needs to be 'final' if not accessed from outside
-        // final ImageView loadingGif;
+        private final ImageView loadingGif;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Find the ImageView
-            ImageView loadingGif = itemView.findViewById(R.id.loading);
+            loadingGif = itemView.findViewById(R.id.loading);
+        }
 
-            // Load the GIF here, during creation
+        void bind() {
+            // Load the GIF here to ensure it plays even if the ViewHolder was recycled
             Glide.with(itemView.getContext())
                     .asGif()
                     .load(R.drawable.loading)

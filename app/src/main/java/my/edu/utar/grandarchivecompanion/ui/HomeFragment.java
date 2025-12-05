@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-// --- REFINEMENT 1: Add animation imports ---
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 
@@ -12,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
+
 import my.edu.utar.grandarchivecompanion.R;
 import my.edu.utar.grandarchivecompanion.databinding.FragmentHomeBinding;
 
@@ -72,9 +72,9 @@ public class HomeFragment extends Fragment {
     }
 
     public void setBottomNavVisibility(boolean visible) {
-        // --- BUG FIX 2: Add null check for the binding ---
+        // Null check to prevent crashes if view is destroyed
         if (binding == null) {
-            return; // Don't do anything if the view is already destroyed
+            return;
         }
 
         if (visible) {
@@ -82,7 +82,6 @@ public class HomeFragment extends Fragment {
             binding.bottomNavigation.setVisibility(View.VISIBLE);
             binding.bottomNavigation.animate()
                     .translationY(0)
-                    // Use the imported class
                     .setInterpolator(new DecelerateInterpolator())
                     .setDuration(300)
                     .start();
@@ -90,7 +89,6 @@ public class HomeFragment extends Fragment {
             // Hide the BottomNavigationView
             binding.bottomNavigation.animate()
                     .translationY(binding.bottomNavigation.getHeight())
-                    // Use the imported class
                     .setInterpolator(new AccelerateInterpolator())
                     .setDuration(300)
                     .withEndAction(() -> binding.bottomNavigation.setVisibility(View.GONE))

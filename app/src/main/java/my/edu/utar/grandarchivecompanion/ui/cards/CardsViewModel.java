@@ -2,22 +2,23 @@ package my.edu.utar.grandarchivecompanion.ui.cards;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import my.edu.utar.grandarchivecompanion.R;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -34,12 +35,18 @@ public class CardsViewModel extends ViewModel {
     private int currentPage = 1;
     private boolean isLoadingMore = false;
     private boolean canLoadMore = true;
+
+    // --- Search & Filter State ---
     private String currentQuery = "";
     private String currentSetPrefix = "";
+    private String currentElement = "";
+    private String currentClass = "";
+    private String currentType = "";
+    private String currentSubtype = "";
+
     private static final int PAGE_SIZE = 20;
 
     // --- LiveData ---
-    // The single source of truth for the entire list of cards
     private final MutableLiveData<List<CardItem>> _cards = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> _isLoadingMore = new MutableLiveData<>(false);
@@ -50,71 +57,69 @@ public class CardsViewModel extends ViewModel {
     public LiveData<Boolean> isLoadingMore() { return _isLoadingMore; }
     public LiveData<Boolean> isError() { return _isError; }
 
-    // --- Initialization ---
     public CardsViewModel() {
         fetchCards();
     }
 
     // --- Public Methods ---
-    /**
-     * Resets and fetches the first page of cards, either for the initial load or a new search.
-     */
+
     public void fetchCards() {
         currentPage = 1;
         canLoadMore = true;
         isLoadingMore = false;
-        // Use setValue as this is called from the main thread (e.g., UI event)
         _isLoading.setValue(true);
         _isError.setValue(false);
-        _cards.setValue(new ArrayList<>()); // Clear the list immediately for a new search
+        _cards.setValue(new ArrayList<>());
         fetchDataForPage(currentPage);
     }
 
-    /**
-     * Fetches the next page of cards if not already loading and if more pages are available.
-     */
     public void loadMoreCards() {
         if (isLoadingMore || !canLoadMore) return;
         isLoadingMore = true;
-        _isLoadingMore.postValue(true); // Use postValue for thread safety
+        _isLoadingMore.postValue(true);
         currentPage++;
         fetchDataForPage(currentPage);
     }
 
-    /**
-     * Sets the search query with a debounce to prevent excessive API calls while typing.
-     */
     public void setSearchQuery(String query) {
         searchHandler.removeCallbacks(searchRunnable);
         searchRunnable = () -> {
             currentQuery = query;
             fetchCards();
         };
-        searchHandler.postDelayed(searchRunnable, 500); // 500ms delay
+        searchHandler.postDelayed(searchRunnable, 500);
     }
 
-    public void setSetPrefix(String prefix){
-        if (currentSetPrefix.equals(prefix))
-            return;
+    public void setSetPrefix(String prefix) {
+        if (currentSetPrefix.equals(prefix)) return;
         currentSetPrefix = prefix;
         fetchCards();
     }
 
+    public void updateFilters(String element, String cardClass, String type, String subtype) {
+        this.currentElement = element != null ? element : "";
+        this.currentClass = cardClass != null ? cardClass : "";
+        this.currentType = type != null ? type : "";
+        this.currentSubtype = subtype != null ? subtype : "";
+        fetchCards();
+    }
+
     // --- Private Helper Methods ---
+
     private void fetchDataForPage(final int page) {
         String baseUrl = "https://api.gatcg.com/cards/search";
         StringBuilder urlBuilder = new StringBuilder(baseUrl);
         urlBuilder.append("?page=").append(page);
         urlBuilder.append("&limit=").append(PAGE_SIZE);
 
-        if (!currentQuery.isEmpty()) {
-            urlBuilder.append("&name=").append(currentQuery);
-        }
-        if (!currentSetPrefix.isEmpty()) {
-            urlBuilder.append("&prefix=").append(currentSetPrefix);
-        }
-        String finalUrl = urlBuilder.toString();
-        Request request = new Request.Builder().url(finalUrl).build();
+        if (!currentQuery.isEmpty()) urlBuilder.append("&name=").append(currentQuery);
+        if (!currentSetPrefix.isEmpty()) urlBuilder.append("&prefix=").append(currentSetPrefix);
+        if (!currentElement.isEmpty()) urlBuilder.append("&element=").append(currentElement);
+        if (!currentClass.isEmpty()) urlBuilder.append("&class=").append(currentClass);
+        if (!currentType.isEmpty()) urlBuilder.append("&type=").append(currentType);
+        if (!currentSubtype.isEmpty()) urlBuilder.append("&subtype=").append(currentSubtype);
+
+        Request request = new Request.Builder().url(urlBuilder.toString()).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -123,38 +128,42 @@ public class CardsViewModel extends ViewModel {
                 isLoadingMore = false;
                 _isLoading.postValue(false);
                 _isLoadingMore.postValue(false);
-                if (page == 1) {
-                    _isError.postValue(true);
-                }
+                if (page == 1) _isError.postValue(true);
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful() && response.body() != null) {
-                    String json = response.body().string();
-                    JsonArray dataArray = gson.fromJson(json, JsonObject.class).getAsJsonArray("data");
-                    List<CardItem> newCards = parseCards(dataArray, currentSetPrefix);
+                    try {
+                        String json = response.body().string();
+                        JsonObject rootObj = gson.fromJson(json, JsonObject.class);
+                        List<CardItem> newCards = new ArrayList<>();
 
-                    if (newCards.size() < PAGE_SIZE) {
-                        canLoadMore = false;
-                    }
-
-                    // CRITICAL FIX: Perform LiveData update on the main thread
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        if (page == 1) {
-                            _cards.setValue(newCards);
-                        } else {
-                            List<CardItem> currentList = _cards.getValue();
-                            if (currentList == null) {
-                                currentList = new ArrayList<>();
-                            }
-                            List<CardItem> updatedList = new ArrayList<>(currentList);
-                            updatedList.addAll(newCards);
-                            _cards.setValue(updatedList);
+                        if (rootObj.has("data") && rootObj.get("data").isJsonArray()) {
+                            JsonArray dataArray = rootObj.getAsJsonArray("data");
+                            newCards = parseCards(dataArray, currentSetPrefix);
                         }
-                    });
+
+                        if (newCards.size() < PAGE_SIZE) canLoadMore = false;
+
+                        List<CardItem> finalNewCards = newCards;
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (page == 1) {
+                                _cards.setValue(finalNewCards);
+                            } else {
+                                List<CardItem> currentList = _cards.getValue();
+                                if (currentList == null) currentList = new ArrayList<>();
+                                List<CardItem> updatedList = new ArrayList<>(currentList);
+                                updatedList.addAll(finalNewCards);
+                                _cards.setValue(updatedList);
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        if (page == 1) _isError.postValue(true);
+                    }
                 } else {
-                    onFailure(call, new IOException("Unexpected API response: " + response));
+                    if (page == 1) _isError.postValue(true);
                 }
                 isLoadingMore = false;
                 _isLoading.postValue(false);
@@ -163,132 +172,176 @@ public class CardsViewModel extends ViewModel {
         });
     }
 
-    public static final class EffectTextParser {
-        private EffectTextParser() {}
-
-        public static String parseEffectText(String rawText) {
-            if (rawText == null || rawText.isEmpty()) return "No effect text.";
-            String parsed = rawText;
-            parsed = parsed.replaceAll("(?<!\\w)\\[?POWER\\]?(?!\\w)", "<img src=\"ic_sword\"/>");
-            parsed = parsed.replaceAll("(?<!\\w)\\[?LIFE\\]?(?!\\w)", "<img src=\"ic_heart\"/>");
-            parsed = parsed.replaceAll("(?<!\\w)\\[?REST\\]?(?!\\w)", "<img src=\"ic_rest\"/>");
-            return parsed;
-        }
-    }
-
-
     private List<CardItem> parseCards(JsonArray dataArray, String activeSetPrefix) {
         List<CardItem> newCards = new ArrayList<>();
         if (dataArray == null) return newCards;
-
         for (int i = 0; i < dataArray.size(); i++) {
-            JsonObject cardObj = dataArray.get(i).getAsJsonObject();
-            String name = cardObj.has("name") ? cardObj.get("name").getAsString() : "Unknown";
-
-            // --- Image URL Parsing ---
-            String imageUrl = "";
-            if (cardObj.has("editions") && !cardObj.get("editions").isJsonNull() && cardObj.get("editions").isJsonArray()) {
-                JsonArray editions = cardObj.getAsJsonArray("editions");
-
-                // 1. If a specific set is selected, try to find a matching image
-                if (!activeSetPrefix.isEmpty() && editions.size() > 0) {
-                    for (JsonElement editionElement : editions) {
-                        JsonObject edition = editionElement.getAsJsonObject();
-                        if (edition.has("set") && edition.get("set").isJsonObject()) {
-                            JsonObject set = edition.getAsJsonObject("set");
-                            if (set.has("prefix") && !set.get("prefix").isJsonNull()) {
-                                String editionPrefix = set.get("prefix").getAsString();
-                                if (editionPrefix.trim().equalsIgnoreCase(activeSetPrefix.trim())) {
-                                    if (edition.has("image") && !edition.get("image").isJsonNull()) {
-                                        imageUrl = "https://api.gatcg.com" + edition.get("image").getAsString();
-                                        break; // Found it, stop searching
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // --- FIX: ADDED MISSING FALLBACK LOGIC ---
-                // 2. If imageUrl is still empty (no match found or "All Sets" selected), use the first one.
-                if (imageUrl.isEmpty() && editions.size() > 0) {
-                    JsonObject firstEdition = editions.get(0).getAsJsonObject();
-                    if (firstEdition.has("image") && !firstEdition.get("image").isJsonNull()) {
-                        imageUrl = "https://api.gatcg.com" + firstEdition.get("image").getAsString();
-                    }
-                }
-            }
-
-            // --- (The rest of your parsing logic is correct and remains unchanged) ---
-            String type = "Unknown Type";
-            if (cardObj.has("types") && !cardObj.get("types").isJsonNull() && cardObj.get("types").isJsonArray()) {
-                JsonArray types = cardObj.getAsJsonArray("types");
-                if (types.size() > 0) {
-                    type = types.get(0).getAsString();
-                }
-            }
-            // Replace the existing effect text handling inside `parseCards(...)` with this:
-            String text = cardObj.has("effect_raw") && !cardObj.get("effect_raw").isJsonNull()
-                    ? EffectTextParser.parseEffectText(cardObj.get("effect_raw").getAsString())
-                    : "No effect text.";
-
-
-
-            StringBuilder rulingsBuilder = new StringBuilder();
-            if (cardObj.has("rule") && !cardObj.get("rule").isJsonNull() && cardObj.get("rule").isJsonArray()) {
-                JsonArray rulingsArray = cardObj.getAsJsonArray("rule");
-                for (int j = 0; j < rulingsArray.size(); j++) {
-                    JsonObject rulingObj = rulingsArray.get(j).getAsJsonObject();
-                    String rulingText = "";
-                    if (rulingObj.has("text") && !rulingObj.get("text").isJsonNull()) {
-                        rulingText = rulingObj.get("text").getAsString();
-                    } else if (rulingObj.has("description") && !rulingObj.get("description").isJsonNull()) {
-                        rulingText = rulingObj.get("description").getAsString();
-                    }
-
-                    if (!rulingText.isEmpty()) {
-                        rulingsBuilder.append("• ").append(rulingText).append("\n\n");
-                    }
-                }
-            }
-            String rulingsText = rulingsBuilder.length() > 0 ? rulingsBuilder.toString().trim() : "No rulings.";
-
-            StringBuilder legalityBuilder = new StringBuilder();
-            boolean isCardBanned = false;
-            if (cardObj.has("legality") && !cardObj.get("legality").isJsonNull() && cardObj.get("legality").isJsonObject()) {
-                JsonObject legalityObj = cardObj.getAsJsonObject("legality");
-                for (String formatKey : legalityObj.keySet()) {
-                    JsonElement statusElement = legalityObj.get(formatKey);
-                    String status = "Unknown";
-                    if (statusElement != null) {
-                        if (statusElement.isJsonObject()) {
-                            JsonObject statusObj = statusElement.getAsJsonObject();
-                            if (statusObj.has("status") && !statusObj.get("status").isJsonNull()) {
-                                status = statusObj.get("status").getAsString();
-                            } else if (statusObj.has("limit") && !statusObj.get("limit").isJsonNull()) {
-                                int limit = statusObj.get("limit").getAsInt();
-                                status = (limit == 0) ? "Banned" : "Legal";
-                            }
-                        } else if (statusElement.isJsonPrimitive()) {
-                            status = statusElement.getAsString();
-                        }
-
-                        if (status.equalsIgnoreCase("Banned")){
-                            isCardBanned = true;
-                        }
-                    }
-                    String formattedFormat = Character.toUpperCase(formatKey.charAt(0)) + formatKey.substring(1).toLowerCase();
-                    String formattedStatus = Character.toUpperCase(status.charAt(0)) + status.substring(1).toLowerCase();
-                    legalityBuilder.append(formattedFormat).append(": ").append(formattedStatus).append("\n");
-                }
-            } else {
-                legalityBuilder.append("Standard: Legal\n");
-                legalityBuilder.append("Draft: Legal");
-            }
-            String legalityText = legalityBuilder.toString().trim();
-
-            newCards.add(new CardItem(name, imageUrl, type, text, rulingsText, legalityText, isCardBanned));
+            // Start parsing with isNested = false
+            CardItem item = parseSingleCard(dataArray.get(i).getAsJsonObject(), activeSetPrefix, false);
+            if (item != null) newCards.add(item);
         }
         return newCards;
+    }
+
+    @Nullable
+    private CardItem parseSingleCard(@NonNull JsonObject cardObj, String activeSetPrefix, boolean isNested) {
+
+        // --- 1. Other Orientations (Parsed First) ---
+        List<CardItem> otherOrientations = new ArrayList<>();
+
+        // Only parse other orientations if we are NOT currently inside a nested object to avoid infinite recursion
+        if (!isNested && cardObj.has("other_orientations") && cardObj.get("other_orientations").isJsonArray()) {
+            for (JsonElement e : cardObj.getAsJsonArray("other_orientations")) {
+                if (e.isJsonObject()) {
+                    // Recursive call: pass true for isNested
+                    CardItem other = parseSingleCard(e.getAsJsonObject(), activeSetPrefix, true);
+                    if (other != null) otherOrientations.add(other);
+                }
+            }
+        }
+
+        // --- 2. Main Card Data Parsing ---
+        String name = cardObj.has("name") ? cardObj.get("name").getAsString() : "Unknown";
+
+        // Image Parsing
+        String imageUrl = "";
+        // Try Ed. Array (Main cards)
+        if (cardObj.has("editions") && cardObj.get("editions").isJsonArray()) {
+            JsonArray editions = cardObj.getAsJsonArray("editions");
+            if (!activeSetPrefix.isEmpty()) {
+                for (JsonElement ed : editions) {
+                    JsonObject editionObj = ed.getAsJsonObject();
+                    if (editionObj.has("set") && editionObj.get("set").getAsJsonObject().has("prefix")) {
+                        String prefix = editionObj.get("set").getAsJsonObject().get("prefix").getAsString();
+                        if (prefix.equalsIgnoreCase(activeSetPrefix) && editionObj.has("image")) {
+                            imageUrl = "https://api.gatcg.com" + editionObj.get("image").getAsString();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (imageUrl.isEmpty() && editions.size() > 0 && editions.get(0).getAsJsonObject().has("image")) {
+                imageUrl = "https://api.gatcg.com" + editions.get(0).getAsJsonObject().get("image").getAsString();
+            }
+        }
+        // Try Ed. Object (Nested cards)
+        if (imageUrl.isEmpty() && cardObj.has("edition") && cardObj.get("edition").isJsonObject()) {
+            JsonObject edObj = cardObj.getAsJsonObject("edition");
+            if (edObj.has("image")) {
+                imageUrl = "https://api.gatcg.com" + edObj.get("image").getAsString();
+            }
+        }
+        // Try Direct Image (Fallback)
+        if (imageUrl.isEmpty() && cardObj.has("image")) {
+            String raw = cardObj.get("image").getAsString();
+            imageUrl = raw.startsWith("http") ? raw : "https://api.gatcg.com" + raw;
+        }
+
+        // --- Rich Type Parsing ---
+        List<String> combinedTypes = new ArrayList<>();
+
+        // Classes parsing logic REMOVED.
+
+        // Types
+        if (cardObj.has("types") && cardObj.get("types").isJsonArray()) {
+            JsonArray arr = cardObj.getAsJsonArray("types");
+            for(JsonElement e : arr) combinedTypes.add(capitalize(e.getAsString()));
+        } else if (cardObj.has("type") && !cardObj.get("type").isJsonNull()) {
+            combinedTypes.add(capitalize(cardObj.get("type").getAsString()));
+        }
+
+        // Subtypes
+        if (cardObj.has("subtypes") && cardObj.get("subtypes").isJsonArray()) {
+            JsonArray arr = cardObj.getAsJsonArray("subtypes");
+            for(JsonElement e : arr) combinedTypes.add(capitalize(e.getAsString()));
+        }
+
+        String finalTypeString = TextUtils.join(" - ", combinedTypes);
+        if (finalTypeString.isEmpty()) finalTypeString = "Unknown Type";
+
+        // --- Cost Parsing ---
+        String cost = "N/A";
+        if (cardObj.has("cost") && !cardObj.get("cost").isJsonNull()) cost = cardObj.get("cost").getAsString();
+        else if (cardObj.has("cost_memory") && !cardObj.get("cost_memory").isJsonNull()) cost = cardObj.get("cost_memory").getAsString();
+        else if (cardObj.has("level") && !cardObj.get("level").isJsonNull()) cost = "Lv." + cardObj.get("level").getAsString();
+
+        // --- Text & Rulings ---
+        String rawEffect = extractEffectText(cardObj);
+
+        // Replace CARDNAME with the current card object's name
+        if (!name.equals("Unknown") && rawEffect.contains("CARDNAME")) {
+            rawEffect = rawEffect.replace("CARDNAME", name);
+        }
+
+        String formattedEffect = EffectTextParser.parseEffectText(rawEffect);
+
+        StringBuilder rulingsBuilder = new StringBuilder();
+        if (cardObj.has("rule") && cardObj.get("rule").isJsonArray()) {
+            for (JsonElement e : cardObj.getAsJsonArray("rule")) {
+                JsonObject r = e.getAsJsonObject();
+                String txt = r.has("text") ? r.get("text").getAsString() : (r.has("description") ? r.get("description").getAsString() : "");
+                if (!txt.isEmpty()) rulingsBuilder.append("• ").append(txt).append("\n\n");
+            }
+        }
+        String rulingsText = rulingsBuilder.length() > 0 ? rulingsBuilder.toString().trim() : "No rulings.";
+
+        // --- Legality ---
+        String legalityText = parseLegality(cardObj);
+        boolean isBanned = legalityText.contains("Banned");
+
+        return new CardItem(name, imageUrl, cost, finalTypeString, formattedEffect, rulingsText, legalityText, isBanned, otherOrientations);
+    }
+
+    // --- Helpers ---
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return "";
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
+    private String parseLegality(JsonObject cardObj) {
+        if (!cardObj.has("legality") || !cardObj.get("legality").isJsonObject()) return "Standard: Legal\nDraft: Legal";
+        StringBuilder sb = new StringBuilder();
+        JsonObject leg = cardObj.getAsJsonObject("legality");
+        for (String key : leg.keySet()) {
+            String status = "Unknown";
+            JsonElement el = leg.get(key);
+            if (el.isJsonObject()) {
+                JsonObject o = el.getAsJsonObject();
+                if (o.has("status")) status = o.get("status").getAsString();
+                else if (o.has("limit")) status = o.get("limit").getAsInt() == 0 ? "Banned" : "Legal";
+            } else if (el.isJsonPrimitive()) {
+                status = el.getAsString();
+            }
+            sb.append(capitalize(key)).append(": ").append(capitalize(status)).append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private String extractEffectText(JsonObject cardObj) {
+        // Priority: effect > effect_raw > others
+        String[] keys = {"effect", "effect_raw", "effect_text", "text", "effect_html"};
+        for (String key : keys) {
+            if (cardObj.has(key) && !cardObj.get(key).isJsonNull()) {
+                JsonElement el = cardObj.get(key);
+                if (el.isJsonPrimitive()) return el.getAsString();
+                if (el.isJsonArray()) {
+                    StringBuilder sb = new StringBuilder();
+                    for(JsonElement e : el.getAsJsonArray()) sb.append(e.getAsString()).append("\n\n");
+                    return sb.toString().trim();
+                }
+            }
+        }
+        return "";
+    }
+
+    public static final class EffectTextParser {
+        private EffectTextParser() {}
+        public static String parseEffectText(String rawText) {
+            if (rawText == null) return "";
+            return rawText.replaceAll("(?<!\\w)\\[?POWER\\]?(?!\\w)", "<img src=\"ic_sword\"/>")
+                    .replaceAll("(?<!\\w)\\[?LIFE\\]?(?!\\w)", "<img src=\"ic_heart\"/>")
+                    .replaceAll("(?<!\\w)\\[?REST\\]?(?!\\w)", "<img src=\"ic_rest\"/>");
+        }
     }
 }
