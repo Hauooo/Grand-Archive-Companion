@@ -7,6 +7,7 @@ import android.view.animation.DecelerateInterpolator;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
@@ -23,12 +24,17 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFullScreen = false;
     private ActivityMainBinding binding;
     private NavController navController;
+    private WindowInsetsControllerCompat insetsController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        insetsController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        insetsController.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
 
         // Find the NavController from the NavHostFragment
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
@@ -48,6 +54,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && isFullScreen) {
+            updateSystemBars();
+        }
+    }
+
     // --- Fullscreen methods are now correct since they use 'binding.bottomNavigation' ---
 
     public boolean isFullScreen() {
@@ -56,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void enterFullScreenMode() {
         isFullScreen = true;
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         // Find the current fragment and tell it to update its UI
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
@@ -64,14 +80,12 @@ public class MainActivity extends AppCompatActivity {
             ((HomeFragment) currentFragment).setBottomNavVisibility(false);
         }
 
-        // Hide the system bars (status bar, etc.)
-        WindowInsetsControllerCompat insetsController =
-                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
-        insetsController.hide(WindowInsetsCompat.Type.systemBars());
+        updateSystemBars();
     }
 
     public void exitFullScreenMode() {
         isFullScreen = false;
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
 
         // Find the current fragment and tell it to update its UI
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
@@ -80,9 +94,14 @@ public class MainActivity extends AppCompatActivity {
             ((HomeFragment) currentFragment).setBottomNavVisibility(true);
         }
 
-        // Show the system bars
-        WindowInsetsControllerCompat insetsController =
-                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
-        insetsController.show(WindowInsetsCompat.Type.systemBars());
+        updateSystemBars();
+    }
+
+    private void updateSystemBars() {
+        if (isFullScreen) {
+            insetsController.hide(WindowInsetsCompat.Type.systemBars());
+        } else {
+            insetsController.show(WindowInsetsCompat.Type.systemBars());
+        }
     }
 }
